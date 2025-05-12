@@ -166,4 +166,11 @@
   ::-moz-selection {
     @apply bg-accent text-background;
   }
+  input:-webkit-autofill {
+    box-shadow: 0 0 0px 1000px var(--muted) inset !important; 
+    -webkit-text-fill-color: var(--foreground) !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+  
+
 }
