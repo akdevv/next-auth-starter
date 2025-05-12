@@ -8,9 +8,9 @@ import Footer from "@/components/shared/footer";
 
 export default function Home() {
 	return (
-		<div className="flex flex-col h-screen">
+		<div className="min-h-screen">
 			<Navbar />
-			<main className="flex-1 flex flex-col items-center justify-center mx-auto max-w-screen-2xl px-4">
+			<main className="flex flex-col items-center justify-center mx-auto max-w-screen-2xl px-4">
 				<Hero />
 				<Features />
 				<HowItWorks />
