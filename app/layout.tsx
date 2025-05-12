@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "./providers";
+import type { Metadata } from "next";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
 	title: "next-auth-starter",
@@ -14,8 +14,8 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body className="bg-black text-white">
-				<Providers>{children}</Providers>
+			<body className="dark">
+				<SessionProvider>{children}</SessionProvider>
 			</body>
 		</html>
 	);

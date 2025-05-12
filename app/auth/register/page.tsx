@@ -1,15 +1,31 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useForm } from "react-hook-form";
 
 export default function Register() {
-	const googleRegister = async () => {
-		await signIn("google", { callbackUrl: "/profile" });
+	const { register, handleSubmit } = useForm();
+
+	const onSubmit = (data: any) => {
+		console.log(data);
 	};
 
 	return (
-		<div className="flex flex-col items-center justify-center h-screen bg-black text-white">
-			<button onClick={googleRegister}>Register with Google</button>
+		<div>
+			<form onSubmit={handleSubmit(onSubmit)}>
+				<input {...register("email")} />
+				<input {...register("password")} />
+				<button type="submit">Register</button>
+
+				<button
+					type="button"
+					onClick={() =>
+						signIn("google", { callbackUrl: "/profile" })
+					}
+				>
+					Register with Google
+				</button>
+			</form>
 		</div>
 	);
 }
