@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { IoMdArrowForward } from "react-icons/io";
+
 
 export default function CTA() {
 	return (
@@ -28,15 +30,18 @@ export default function CTA() {
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
 							<Button
 								size="lg"
-								className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-44"
+								className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-44 py-6 px-12"
 								asChild
 							>
-								<Link href="/auth/register">Get Started</Link>
+								<Link href="/auth/register">
+									Get Started{" "}
+									<IoMdArrowForward className="ml-2" />
+								</Link>
 							</Button>
 
 							<Button
 								size="lg"
-								className="min-w-44 bg-background/50 backdrop-blur-sm text-muted-foreground/70 border border-muted-foreground/70 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
+								className="min-w-44 bg-background/50 backdrop-blur-sm text-muted-foreground/70 border border-muted-foreground/70 hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 py-6 px-12"
 								asChild
 							>
 								<Link href="/docs">Read the Docs</Link>

@@ -1,17 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import Navbar from "@/components/shared/navbar";
 import Footer from "@/components/shared/footer";
-import { useSession, signOut } from "next-auth/react";
+import Sidebar from "@/components/profile/sidebar";
+import ProfileSection from "@/components/profile/profile-section";
+import SecuritySection from "@/components/profile/security-section";
+import DevicesSection from "@/components/profile/devices-section";
 
 export default function Profile() {
-	const { data: session, status } = useSession();
+	const [activeSection, setActiveSection] = useState<
+		"profile" | "security" | "devices"
+	>("profile");
 
 	return (
 		<div className="flex flex-col h-screen">
 			<Navbar />
-			<main className="flex-1 flex flex-col items-center justify-center mx-auto max-w-screen-2xl px-4">
-				<h1 className="text-4xl font-bold">Profile</h1>
+			<main className="flex-1 flex gap-10 mx-auto w-full max-w-screen-2xl px-4 pt-24 pb-10">
+				<Sidebar
+					activeSection={activeSection}
+					setActiveSection={setActiveSection}
+				/>
+
+				{/* Main Content */}
+				<div className="flex border border-border rounded-lg p-8 w-full max-w-4xl h-fit">
+					<div className="flex border border-border rounded-lg p-5 w-full h-full bg-secondary/10">
+						{activeSection === "profile" && <ProfileSection />}
+						{activeSection === "security" && <SecuritySection />}
+						{activeSection === "devices" && <DevicesSection />}
+					</div>
+				</div>
 			</main>
 			<Footer />
 		</div>

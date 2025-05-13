@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { IoMdArrowForward } from "react-icons/io";
+
 
 import { FaCheck } from "react-icons/fa6";
 import { MdOutlineContentCopy } from "react-icons/md";
@@ -47,7 +49,9 @@ bun dev`;
 						className="w-full bg-primary text-primary-foreground h-14 text-base font-medium shadow-md hover:shadow-lg transition-all"
 						asChild
 					>
-						<Link href="/auth/register">Get started</Link>
+						<Link href="/auth/register">
+							Get started <IoMdArrowForward className="ml-2" />
+						</Link>
 					</Button>
 					<Button
 						className="w-full h-14 text-base bg-background/50 backdrop-blur-sm text-secondary border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
