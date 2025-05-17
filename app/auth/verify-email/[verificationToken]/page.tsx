@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -19,10 +19,10 @@ import { REGEXP_ONLY_DIGITS } from "input-otp";
 export default function VerifyEmail({
 	params,
 }: {
-	params: { verificationToken: string };
+	params: Promise<{ verificationToken: string }>;
 }) {
 	const router = useRouter();
-	const { verificationToken } = params;
+	const { verificationToken } = use(params);
 
 	const [code, setCode] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { MdErrorOutline } from "react-icons/md";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
-export default function AuthError() {
+function ErrorContent() {
 	const searchParams = useSearchParams();
 	const error = searchParams.get("error");
 	const [isPending, setIsPending] = useState(false);
@@ -94,5 +94,13 @@ export default function AuthError() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+export default function AuthError() {
+	return (
+		<Suspense fallback={<div>Loading...</div>}>
+			<ErrorContent />
+		</Suspense>
 	);
 }
