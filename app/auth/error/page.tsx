@@ -39,6 +39,7 @@ export default function AuthError() {
 			// TODO: Implement resend verification email logic
 			toast.success("Verification email sent successfully!");
 		} catch (error) {
+			console.error(error);
 			toast.error("Failed to send verification email");
 		} finally {
 			setIsPending(false);

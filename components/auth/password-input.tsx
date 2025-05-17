@@ -10,9 +10,9 @@ export default function PasswordInput({
 	isPending,
 	errors,
 }: {
-	register: UseFormRegister<any>;
+	register: UseFormRegister<{ password: string }>;
 	isPending: boolean;
-	errors: FieldErrors<any>;
+	errors: FieldErrors<{ password: string }>;
 }) {
 	const [showPassword, setShowPassword] = useState(false);
 

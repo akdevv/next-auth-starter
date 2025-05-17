@@ -31,7 +31,7 @@ export default function Login() {
 		resolver: zodResolver(loginSchema),
 	});
 
-	const onSubmit = async (data: any) => {
+	const onSubmit = async (data: { email: string; password: string }) => {
 		setError(null);
 		setIsPending(true);
 
@@ -173,7 +173,7 @@ export default function Login() {
 				{/* Register Link */}
 				<div className="text-center mt-6">
 					<p className="text-sm text-muted-foreground">
-						Don't have an account?{" "}
+						Don&apos;t have an account?{" "}
 						<Link
 							href="/auth/register"
 							className="text-primary hover:underline"

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Pencil } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import Image from "next/image";
 // import ImageUpload from "../shared/image-upload";
 
 interface ProfileFormValues {
@@ -26,9 +27,9 @@ export default function ProfileSection() {
 		},
 	});
 
-	const { register, handleSubmit, setValue, watch } = form;
+	const { register, handleSubmit, setValue } = form;
 
-	const handleProfileUpdate = handleSubmit((data) => {
+	const handleProfileUpdate = handleSubmit(() => {
 		// Handle profile update logic here
 		setEditProfileOpen(false);
 	});
@@ -55,9 +56,11 @@ export default function ProfileSection() {
 				<div className="flex flex-col md:flex-row items-start gap-6">
 					<div className="w-full md:w-1/4 max-w-[180px]">
 						<div className="overflow-hidden rounded-xl aspect-square w-full bg-muted/20 border-2 border-border/50 flex items-center justify-center">
-							<img
+							<Image
 								src={session?.user?.image ?? ""}
 								alt={session?.user?.name ?? ""}
+								width={100}
+								height={100}
 								className="w-full h-full object-cover"
 							/>
 						</div>
@@ -102,6 +105,9 @@ export default function ProfileSection() {
 							onUpload={handleAvatarUpload}
 							className="w-full md:w-1/4 max-w-[200px]"
 						/> */}
+						<Button onClick={() => handleAvatarUpload("")}>
+							Upload Avatar
+						</Button>
 
 						<div className="flex-grow space-y-4 w-full">
 							<div className="space-y-2">
