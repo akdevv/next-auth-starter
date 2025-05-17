@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@/schema/auth";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,12 +15,13 @@ import AuthSeparator from "@/components/auth/auth-seprator";
 import { FaGoogle } from "react-icons/fa";
 import { MdErrorOutline } from "react-icons/md";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import PasswordInput from "@/components/auth/password-input";
 
 export default function Login() {
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [isPending, setIsPending] = useState(false);
+	const [rememberMe, setRememberMe] = useState(false);
 
 	const {
 		register,
@@ -79,7 +81,8 @@ export default function Login() {
 					</div>
 				)}
 
-				<div className="space-y-2">
+				{/* Email */}
+				<div className="space-y-1">
 					<input
 						{...register("email")}
 						type="email"
@@ -97,16 +100,12 @@ export default function Login() {
 					)}
 				</div>
 
-				<div className="space-y-2">
-					<input
-						{...register("password")}
-						type="password"
-						placeholder="Password"
-						disabled={isPending}
-						className={cn(
-							"w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent",
-							errors.password && "border-red-700"
-						)}
+				{/* Password */}
+				<div className="space-y-1">
+					<PasswordInput
+						register={register}
+						isPending={isPending}
+						errors={errors}
 					/>
 					{errors.password && (
 						<p className="text-red-700 text-xs">
@@ -115,12 +114,15 @@ export default function Login() {
 					)}
 				</div>
 
+				{/* Remember me & Forgot password */}
 				<div className="flex items-center justify-between">
 					<div className="flex items-center space-x-2">
 						<Checkbox
 							id="remember"
-							checked={true}
-							onCheckedChange={() => {}}
+							checked={rememberMe}
+							onCheckedChange={(checked) =>
+								setRememberMe(checked as boolean)
+							}
 							className="border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
 						/>
 						<label
@@ -139,6 +141,7 @@ export default function Login() {
 					</Link>
 				</div>
 
+				{/* Login Button */}
 				<Button
 					type="submit"
 					disabled={isPending}

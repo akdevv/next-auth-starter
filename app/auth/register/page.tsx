@@ -8,16 +8,20 @@ import { registerSchema } from "@/schema/auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { registerUser } from "@/lib/actions/auth";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FaGoogle } from "react-icons/fa";
 import AuthSeparator from "@/components/auth/auth-seprator";
+import PasswordInput from "@/components/auth/password-input";
+import { MdErrorOutline } from "react-icons/md";
 
 export default function Register() {
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
-	const [isPending, setIsPending] = useState(false);
+	const [isPending, setIsPending] = useState<boolean>(false);
+	const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);
 
 	const {
 		register,
@@ -32,28 +36,53 @@ export default function Register() {
 		},
 	});
 
-	const onSubmit = async (data: any) => {
-		setError(null);
-		setIsPending(true);
+	const onSubmit = async (data: {
+		name: string;
+		email: string;
+		password: string;
+	}) => {
+		// validate terms & conditions
+		if (!agreeToTerms) {
+			toast.error("Please agree to the terms & conditions!");
+			return;
+		}
+
+		// validate fields
+		const { name, email, password } = data;
+		if (!name || !email || !password) {
+			toast.error("Missing required fields!");
+			return;
+		}
 
 		try {
-			const res = await signIn("credentials", {
-				name: data.name,
-				email: data.email,
-				password: data.password,
+			setError(null);
+			setIsPending(true);
+
+			await registerUser(data);
+			toast.success("Account created successfully!");
+
+			// Sign in the user after successful registration
+			const signInResult = await signIn("credentials", {
+				email,
+				password,
 				redirect: false,
 			});
 
-			if (res?.ok) {
-				toast.success("Account created successfully!");
+			if (!signInResult?.error) {
 				router.push("/profile");
 			} else {
-				setError("Failed to create account");
-				toast.error("Failed to create account");
+				setError(
+					"Account created but failed to sign in. Please try logging in."
+				);
+				toast.error(
+					"Account created but failed to sign in. Please try logging in."
+				);
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "An error occurred!");
-			toast.error(error);
+			const errorMessage =
+				err instanceof Error ? err.message : "An error occurred!";
+			setError(errorMessage);
+			toast.error(errorMessage);
 		} finally {
 			setIsPending(false);
 		}
@@ -71,24 +100,16 @@ export default function Register() {
 			</div>
 
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-				{error && <div className="text-red-500 text-sm">{error}</div>}
-				{errors.name && (
-					<div className="text-red-500 text-sm">
-						{errors.name.message}
-					</div>
-				)}
-				{errors.email && (
-					<div className="text-red-500 text-sm">
-						{errors.email.message}
-					</div>
-				)}
-				{errors.password && (
-					<div className="text-red-500 text-sm">
-						{errors.password.message}
+				{/* Error Message */}
+				{error && (
+					<div className="bg-red-800/30 border border-red-700 text-white p-3 rounded-md flex items-center gap-2">
+						<MdErrorOutline className="w-5 h-5" />
+						<p className="text-sm">{error}</p>
 					</div>
 				)}
 
-				<div className="space-y-2">
+				{/* Name */}
+				<div className="space-y-1">
 					<input
 						{...register("name")}
 						type="text"
@@ -96,8 +117,15 @@ export default function Register() {
 						disabled={isPending}
 						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
 					/>
+					{errors.name && (
+						<p className="text-red-700 text-xs">
+							{errors.name.message}
+						</p>
+					)}
 				</div>
-				<div className="space-y-2">
+
+				{/* Email */}
+				<div className="space-y-1">
 					<input
 						{...register("email")}
 						type="email"
@@ -105,23 +133,33 @@ export default function Register() {
 						disabled={isPending}
 						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
 					/>
+					{errors.email && (
+						<p className="text-red-700 text-xs">
+							{errors.email.message}
+						</p>
+					)}
 				</div>
 
+				{/* Password */}
 				<div className="space-y-2">
-					<input
-						{...register("password")}
-						type="password"
-						placeholder="Create a password"
-						disabled={isPending}
-						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
+					<PasswordInput
+						register={register}
+						isPending={isPending}
+						errors={errors}
 					/>
+					{errors.password && (
+						<p className="text-red-700 text-xs">
+							{errors.password.message}
+						</p>
+					)}
 				</div>
 
+				{/* Terms & Conditions */}
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						id="terms"
-						checked={true}
-						onCheckedChange={() => {}}
+						checked={agreeToTerms}
+						onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
 						className="border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
 					/>
 					<label htmlFor="terms">
@@ -151,9 +189,17 @@ export default function Register() {
 				<div className="flex items-center justify-center space-x-4">
 					<Button
 						type="button"
-						onClick={() =>
-							signIn("google", { callbackUrl: "/profile" })
-						}
+						onClick={() => {
+							if (agreeToTerms) {
+								signIn("google", {
+									callbackUrl: "/profile",
+								});
+							} else {
+								toast.error(
+									"Please agree to the terms & conditions!"
+								);
+							}
+						}}
 						className="w-full py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer"
 					>
 						<FaGoogle className="w-5 h-5" /> Continue with Google
