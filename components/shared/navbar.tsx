@@ -75,7 +75,13 @@ export default function Navbar() {
 					</div>
 
 					{/* Auth Buttons / Search Bar */}
-					{!session?.user ? (
+					{session?.user && (
+						<div className="w-full md:max-w-xs">
+							<SearchBar />
+						</div>
+					)}
+
+					{!session?.user && (
 						<div className="hidden md:flex gap-2">
 							<Button
 								className="bg-background text-secondary border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
@@ -86,10 +92,6 @@ export default function Navbar() {
 							<Button asChild>
 								<Link href="/auth/register">Register</Link>
 							</Button>
-						</div>
-					) : (
-						<div className="w-full md:max-w-xs">
-							<SearchBar />
 						</div>
 					)}
 				</div>

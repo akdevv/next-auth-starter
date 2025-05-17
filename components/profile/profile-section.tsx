@@ -30,7 +30,6 @@ export default function ProfileSection() {
 
 	const handleProfileUpdate = handleSubmit((data) => {
 		// Handle profile update logic here
-		console.log("Profile updated:", data);
 		setEditProfileOpen(false);
 	});
 

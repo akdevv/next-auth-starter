@@ -2,14 +2,62 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema } from "@/schema/auth";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import AuthSeparator from "@/components/auth/auth-seprator";
-import { FaGoogle, FaGithub } from "react-icons/fa";
+import { FaGoogle } from "react-icons/fa";
+import { MdErrorOutline } from "react-icons/md";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Login() {
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const router = useRouter();
+	const [error, setError] = useState<string | null>(null);
+	const [isPending, setIsPending] = useState(false);
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm({
+		resolver: zodResolver(loginSchema),
+	});
+
+	const onSubmit = async (data: any) => {
+		setError(null);
+		setIsPending(true);
+
+		try {
+			const res = await signIn("credentials", {
+				email: data.email,
+				password: data.password,
+				redirect: false,
+			});
+
+			if (!res?.error) {
+				toast.success("Logged in successfully!");
+				router.push("/profile");
+			} else {
+				const errorMessage =
+					`Error: ${res?.error}` || "Invalid email or password";
+				setError(errorMessage);
+				toast.error(errorMessage);
+			}
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "An error occurred!";
+			setError(errorMessage);
+			toast.error(errorMessage);
+		} finally {
+			setIsPending(false);
+		}
+	};
 
 	return (
 		<div className="mx-auto w-full max-w-md">
@@ -22,27 +70,49 @@ export default function Login() {
 				</p>
 			</div>
 
-			<form action="" className="space-y-6">
+			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+				{/* Error Message */}
+				{error && (
+					<div className="bg-red-800/30 border border-red-700 text-white p-3 rounded-md flex items-center gap-2">
+						<MdErrorOutline className="w-5 h-5" />
+						<p className="text-sm">{error}</p>
+					</div>
+				)}
+
 				<div className="space-y-2">
 					<input
-						id="email"
+						{...register("email")}
 						type="email"
 						placeholder="Email"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
+						disabled={isPending}
+						className={cn(
+							"w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent",
+							errors.email && "border-red-700"
+						)}
 					/>
+					{errors.email && (
+						<p className="text-red-700 text-xs">
+							{errors.email.message}
+						</p>
+					)}
 				</div>
 
 				<div className="space-y-2">
 					<input
-						id="password"
+						{...register("password")}
 						type="password"
 						placeholder="Password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
+						disabled={isPending}
+						className={cn(
+							"w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent",
+							errors.password && "border-red-700"
+						)}
 					/>
+					{errors.password && (
+						<p className="text-red-700 text-xs">
+							{errors.password.message}
+						</p>
+					)}
 				</div>
 
 				<div className="flex items-center justify-between">
@@ -71,21 +141,24 @@ export default function Login() {
 
 				<Button
 					type="submit"
+					disabled={isPending}
 					className="w-full py-6 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
 				>
-					Log in
+					{isPending ? "Logging in..." : "Log in"}
 				</Button>
 
 				<AuthSeparator text="Or continue with" />
 
 				{/* Social Login Buttons */}
 				<div className="flex items-center justify-center space-x-4">
-					<Button className="w-1/2 py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer">
-						<FaGoogle className="w-5 h-5" /> Google
-					</Button>
-
-					<Button className="w-1/2 py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer">
-						<FaGithub className="w-5 h-5" /> Github
+					<Button
+						type="button"
+						onClick={() =>
+							signIn("google", { callbackUrl: "/profile" })
+						}
+						className="w-full py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer"
+					>
+						<FaGoogle className="w-5 h-5" /> Continue with Google
 					</Button>
 				</div>
 

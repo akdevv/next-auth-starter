@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
 	title: "next-auth-starter",
@@ -16,6 +17,7 @@ export default function RootLayout({
 		<html lang="en">
 			<body className="dark">
 				<SessionProvider>{children}</SessionProvider>
+				<Toaster />
 			</body>
 		</html>
 	);

@@ -3,17 +3,60 @@
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema } from "@/schema/auth";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FaGoogle } from "react-icons/fa";
 import AuthSeparator from "@/components/auth/auth-seprator";
-import { FaGoogle, FaGithub } from "react-icons/fa";
 
 export default function Register() {
-	const { register, handleSubmit } = useForm();
+	const router = useRouter();
+	const [error, setError] = useState<string | null>(null);
+	const [isPending, setIsPending] = useState(false);
 
-	const onSubmit = (data: any) => {
-		console.log(data);
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm({
+		resolver: zodResolver(registerSchema),
+		defaultValues: {
+			name: "",
+			email: "",
+			password: "",
+		},
+	});
+
+	const onSubmit = async (data: any) => {
+		setError(null);
+		setIsPending(true);
+
+		try {
+			const res = await signIn("credentials", {
+				name: data.name,
+				email: data.email,
+				password: data.password,
+				redirect: false,
+			});
+
+			if (res?.ok) {
+				toast.success("Account created successfully!");
+				router.push("/profile");
+			} else {
+				setError("Failed to create account");
+				toast.error("Failed to create account");
+			}
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "An error occurred!");
+			toast.error(error);
+		} finally {
+			setIsPending(false);
+		}
 	};
 
 	return (
@@ -28,17 +71,38 @@ export default function Register() {
 			</div>
 
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+				{error && <div className="text-red-500 text-sm">{error}</div>}
+				{errors.name && (
+					<div className="text-red-500 text-sm">
+						{errors.name.message}
+					</div>
+				)}
+				{errors.email && (
+					<div className="text-red-500 text-sm">
+						{errors.email.message}
+					</div>
+				)}
+				{errors.password && (
+					<div className="text-red-500 text-sm">
+						{errors.password.message}
+					</div>
+				)}
+
 				<div className="space-y-2">
 					<input
 						{...register("name")}
+						type="text"
 						placeholder="Name"
+						disabled={isPending}
 						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
 					/>
 				</div>
 				<div className="space-y-2">
 					<input
 						{...register("email")}
+						type="email"
 						placeholder="Email"
+						disabled={isPending}
 						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
 					/>
 				</div>
@@ -46,14 +110,16 @@ export default function Register() {
 				<div className="space-y-2">
 					<input
 						{...register("password")}
+						type="password"
 						placeholder="Create a password"
+						disabled={isPending}
 						className="w-full border border-border p-3 rounded-md focus:outline-none focus:none focus:ring-transparent"
 					/>
 				</div>
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="remember"
+						id="terms"
 						checked={true}
 						onCheckedChange={() => {}}
 						className="border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
@@ -73,9 +139,10 @@ export default function Register() {
 				{/* Register Button */}
 				<Button
 					type="submit"
+					disabled={isPending}
 					className="w-full py-6 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
 				>
-					Create account
+					{isPending ? "Creating account..." : "Create account"}
 				</Button>
 
 				<AuthSeparator text="Or continue with" />
@@ -87,13 +154,9 @@ export default function Register() {
 						onClick={() =>
 							signIn("google", { callbackUrl: "/profile" })
 						}
-						className="w-1/2 py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer"
+						className="w-full py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer"
 					>
-						<FaGoogle className="w-5 h-5" /> Google
-					</Button>
-
-					<Button className="w-1/2 py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer">
-						<FaGithub className="w-5 h-5" /> Github
+						<FaGoogle className="w-5 h-5" /> Continue with Google
 					</Button>
 				</div>
 
@@ -113,21 +176,3 @@ export default function Register() {
 		</div>
 	);
 }
-
-
-// <div>
-		// 	<form onSubmit={handleSubmit(onSubmit)}>
-		// 		<input {...register("email")} cl />
-		// 		<input {...register("password")} />
-		// 		<button type="submit">Register</button>
-
-		// 		<button
-		// 			type="button"
-		// 			onClick={() =>
-		// 				signIn("google", { callbackUrl: "/profile" })
-		// 			}
-		// 		>
-		// 			Register with Google
-		// 		</button>
-		// 	</form>
-		// </div>
