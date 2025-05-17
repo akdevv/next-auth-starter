@@ -42,14 +42,19 @@ export default function Login() {
 				redirect: false,
 			});
 
-			if (!res?.error) {
-				toast.success("Logged in successfully!");
-				router.push("/profile");
-			} else {
+			if (res?.error) {
 				const errorMessage =
 					`Error: ${res?.error}` || "Invalid email or password";
 				setError(errorMessage);
-				toast.error(errorMessage);
+				if (res?.error === "EmailNotVerified") {
+					console.log("yes");
+					router.push("/auth/error?error=EmailNotVerified");
+				} else {
+					toast.error(errorMessage);
+				}
+			} else {
+				toast.success("Logged in successfully!");
+				router.push("/profile");
 			}
 		} catch (err) {
 			const errorMessage =
