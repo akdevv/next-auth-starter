@@ -60,8 +60,10 @@ model VerificationAttempt {
   id         String   @id @default(cuid())
   userId     String
   email      String
+  token      String?  // Optional token field for tracking attempts per token
   timestamp  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, timestamp])
+  @@index([token])
 }

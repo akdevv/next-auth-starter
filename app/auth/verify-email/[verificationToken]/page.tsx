@@ -86,6 +86,7 @@ export default function VerifyEmail({
 			}
 
 			toast.success("Email verified successfully!");
+			router.push("/profile");
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "An error occurred";

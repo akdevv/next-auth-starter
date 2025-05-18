@@ -130,12 +130,33 @@ const validateVerificationCode = async (
 	// max attempts - 5 times
 	const MAX_ATTEMPTS = 5;
 
-	// store attempts count in session key
-	const sessionKey = `verification_attempts_${token}`;
-	const attempts = parseInt(sessionStorage.getItem(sessionKey) || "0") + 1;
+	// Get the user
+	const user = await db.user.findUnique({
+		where: { email: verificationToken.email },
+	});
 
-	// store the updated attempts count
-	sessionStorage.setItem(sessionKey, attempts.toString());
+	if (!user) {
+		return { valid: false };
+	}
+
+	// Get current attempts from database
+	const attempts =
+		(await db.verificationAttempt.count({
+			where: {
+				email: verificationToken.email,
+				timestamp: {
+					gte: new Date(Date.now() - 5 * 60 * 1000), // Only count attempts in last 5 minutes
+				},
+			},
+		})) + 1;
+
+	// Record this attempt
+	await db.verificationAttempt.create({
+		data: {
+			userId: user.id,
+			email: verificationToken.email,
+		},
+	});
 
 	if (attempts >= MAX_ATTEMPTS) {
 		return { valid: false, attempts, maxAttempts: MAX_ATTEMPTS };
@@ -143,7 +164,15 @@ const validateVerificationCode = async (
 
 	// check if the code is correct
 	if (code && verificationToken.code === code) {
-		sessionStorage.removeItem(sessionKey);
+		// Clear attempts for this email on successful verification
+		await db.verificationAttempt.deleteMany({
+			where: {
+				email: verificationToken.email,
+				timestamp: {
+					gte: new Date(Date.now() - 5 * 60 * 1000),
+				},
+			},
+		});
 		return { valid: true };
 	}
 
