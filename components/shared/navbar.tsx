@@ -8,14 +8,18 @@ import { useSession } from "next-auth/react";
 import SearchBar from "./searchbar";
 import { Button } from "../ui/button";
 import { FiMenu, FiX } from "react-icons/fi";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-	const { data: session } = useSession();
+	const pathname = usePathname();
+	const { data: session, status } = useSession();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
 	};
+
+	if (status === "loading") return null;
 
 	return (
 		<>
@@ -75,25 +79,28 @@ export default function Navbar() {
 					</div>
 
 					{/* Auth Buttons / Search Bar */}
-					{session?.user && (
+					{pathname === "/docs" && session?.user && (
 						<div className="w-full md:max-w-xs">
 							<SearchBar />
 						</div>
 					)}
 
-					{!session?.user && (
-						<div className="hidden md:flex gap-2">
-							<Button
-								className="bg-background text-secondary border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
-								asChild
-							>
-								<Link href="/auth/login">Login</Link>
-							</Button>
-							<Button asChild>
-								<Link href="/auth/register">Register</Link>
-							</Button>
-						</div>
-					)}
+					<div
+						className={cn(
+							"gap-2",
+							session?.user ? "hidden" : "flex"
+						)}
+					>
+						<Button
+							className="bg-background text-secondary border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
+							asChild
+						>
+							<Link href="/auth/login">Login</Link>
+						</Button>
+						<Button asChild>
+							<Link href="/auth/register">Register</Link>
+						</Button>
+					</div>
 				</div>
 			</header>
 
