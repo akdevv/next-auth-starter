@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 import { Button } from "../ui/button";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MdOutlineLogout } from "react-icons/md";
 import { DeleteDialog } from "./modals/delete-dialog";
+import { LogoutDialog } from "./modals/logout-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Sidebar({
@@ -17,17 +17,16 @@ export default function Sidebar({
 	activeSection: "profile" | "security" | "devices";
 	setActiveSection: (section: "profile" | "security" | "devices") => void;
 }) {
-	const router = useRouter();
 	const { data: session } = useSession();
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-	const handleLogout = () => {
-		signOut();
-		router.push("/");
-	};
+	const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
 	const openDeleteDialog = () => {
 		setDeleteDialogOpen(true);
+	};
+
+	const openLogoutDialog = () => {
+		setLogoutDialogOpen(true);
 	};
 
 	return (
@@ -128,7 +127,7 @@ export default function Sidebar({
 				</button>
 				<button
 					className="w-full flex items-center gap-2 p-3 text-foreground hover:text-foreground/80 hover:bg-foreground/10 rounded-md cursor-pointer"
-					onClick={handleLogout}
+					onClick={openLogoutDialog}
 				>
 					<MdOutlineLogout className="w-4 h-4" />
 					Logout
@@ -139,6 +138,10 @@ export default function Sidebar({
 			<DeleteDialog
 				open={deleteDialogOpen}
 				onOpenChange={setDeleteDialogOpen}
+			/>
+			<LogoutDialog
+				open={logoutDialogOpen}
+				onOpenChange={setLogoutDialogOpen}
 			/>
 		</aside>
 	);

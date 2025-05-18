@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 import {
 	AlertDialog,
@@ -13,9 +13,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { getUserById } from "@/server/user.actions";
 
 interface DeleteDialogProps {
 	open: boolean;
@@ -24,12 +24,26 @@ interface DeleteDialogProps {
 
 export function DeleteDialog({ open, onOpenChange }: DeleteDialogProps) {
 	const [confirmText, setConfirmText] = useState("");
-	const { data: session } = useSession();
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const handleDeleteAccount = async () => {
-		console.log("trying to delete account");
-		const user = await getUserById(session?.user?.id as string);
-		console.log("user:", user);
+		try {
+			setIsDeleting(true);
+			const res = await fetch("/api/user/delete", { method: "DELETE" });
+
+			if (!res.ok) {
+				throw new Error("Failed to delete account!");
+			}
+
+			await signOut();
+			toast.success("Account deleted successfully!");
+			window.location.href = "/";
+		} catch (error) {
+			console.error("Error deleting account:", error);
+			toast.error("Failed to delete account. Please try again.");
+		} finally {
+			setIsDeleting(false);
+		}
 	};
 
 	return (
@@ -66,9 +80,11 @@ export function DeleteDialog({ open, onOpenChange }: DeleteDialogProps) {
 					<AlertDialogAction
 						className="bg-red-400 text-white hover:bg-red-400/80 transition-all duration-300 cursor-pointer"
 						onClick={handleDeleteAccount}
-						disabled={confirmText !== "delete my account"}
+						disabled={
+							confirmText !== "delete my account" || isDeleting
+						}
 					>
-						Delete account
+						{isDeleting ? "Deleting..." : "Delete account"}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

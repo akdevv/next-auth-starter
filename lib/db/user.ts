@@ -1,5 +1,3 @@
-"use server";
-
 import { db } from "@/lib/prisma";
 
 async function getUserById(userId: string) {

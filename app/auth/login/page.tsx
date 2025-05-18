@@ -22,7 +22,7 @@ export default function Login() {
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [isPending, setIsPending] = useState(false);
-	const [rememberMe, setRememberMe] = useState(false);
+	const [rememberMe, setRememberMe] = useState(true);
 	const [showPassword, setShowPassword] = useState(false);
 
 	const {
