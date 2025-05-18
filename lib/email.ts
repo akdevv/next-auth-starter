@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import VerifyEmail from "@/emails/verify-email";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -7,20 +8,20 @@ export async function sendVerificationEmail(
 	verificationToken: string,
 	verificationCode: string
 ) {
-	const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email/${verificationToken}`;
+	console.log("sending verification email");
+	console.log("email:", email);
+	console.log("verificationToken:", verificationToken);
+	console.log("verificationCode:", verificationCode);
+	const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify-email/${verificationToken}`;
 
 	const { data, error } = await resend.emails.send({
-		from: "YourApp <verification@yourdomain.com>",
+		from: "buildlabs <no-reply@buildlabs.me>",
 		to: email,
 		subject: "Verify your email address",
-		html: `
-      <h1>Email Verification</h1>
-      <p>Thank you for registering. Please verify your email address to continue.</p>
-      <p>Your verification code is: <strong>${verificationCode}</strong></p>
-      <p>This code will expire in 5 minutes.</p>
-      <p>Or, click the link below to verify your email address:</p>
-      <a href="${verificationUrl}">Verify Email</a>
-    `,
+		react: VerifyEmail({
+			code: verificationCode,
+			verificationUrl,
+		}),
 	});
 
 	if (error) {

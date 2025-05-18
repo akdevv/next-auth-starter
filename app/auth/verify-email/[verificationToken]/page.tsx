@@ -65,7 +65,7 @@ export default function VerifyEmail({
 			setIsSubmitting(true);
 			const res = await fetch("/api/auth/verify-email/confirm", {
 				method: "POST",
-				body: JSON.stringify({ verificationToken, code }),
+				body: JSON.stringify({ token: verificationToken, code }),
 			});
 
 			const data = await res.json();

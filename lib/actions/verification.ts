@@ -13,7 +13,7 @@ const generateVerificationToken = (): string => {
 
 const createVerificationToken = async (
 	email: string
-): Promise<{ token: string }> => {
+): Promise<{ token: string; code: string }> => {
 	// check rate limiting - 10 emails per day
 	const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -57,10 +57,7 @@ const createVerificationToken = async (
 		data: { userId: user.id, email },
 	});
 
-	// send the verification email
-	// await sendVerificationEmail(email, verificationToken, verificationCode);
-
-	return { token: verificationToken };
+	return { token: verificationToken, code: verificationCode };
 };
 
 const verifyEmail = async (token: string, code?: string) => {

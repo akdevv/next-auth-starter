@@ -49,13 +49,11 @@ export default function Login() {
 					`Error: ${res?.error}` || "Invalid email or password";
 				setError(errorMessage);
 				if (res?.error === "EmailNotVerified") {
-					console.log("yes");
 					router.push("/auth/error?error=EmailNotVerified");
 				} else {
 					toast.error(errorMessage);
 				}
 			} else {
-				toast.success("Logged in successfully!");
 				router.push("/profile");
 			}
 		} catch (err) {
