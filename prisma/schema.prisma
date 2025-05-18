@@ -34,35 +34,37 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String                @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  accounts             Account[]
+  sessions             Session[]
   verificationAttempts VerificationAttempt[]
 }
 
 model VerificationToken {
-  id           String   @id @default(cuid())
-  email        String
-  token        String   @unique
-  code         String   // 6-digit verification code
-  expires      DateTime
-  createdAt    DateTime @default(now())
-  
+  token     String   @unique
+  code      String
+  createdAt DateTime @default(now())
+  email     String
+  id        String   @id @default(cuid())
+  expires   DateTime
+
   @@unique([email, token])
 }
 
 model VerificationAttempt {
-  id         String   @id @default(cuid())
-  userId     String
-  email      String
-  token      String?  // Optional token field for tracking attempts per token
-  timestamp  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  timestamp DateTime @default(now())
+  token     String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, timestamp])
   @@index([token])

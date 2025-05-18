@@ -10,6 +10,8 @@ import { sendVerificationEmail } from "./email";
 declare module "next-auth" {
 	interface User {
 		emailVerified: Date | null;
+		createdAt: Date;
+		updatedAt: Date;
 	}
 }
 
@@ -60,6 +62,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			if (user) {
 				token.id = user.id;
 				token.emailVerified = user.emailVerified;
+				token.createdAt = user.createdAt;
+				token.updatedAt = user.updatedAt;
 			}
 			return token;
 		},
@@ -67,6 +71,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			if (session.user) {
 				session.user.id = token.id as string;
 				session.user.emailVerified = token.emailVerified as Date | null;
+				session.user.createdAt = token.createdAt as Date;
+				session.user.updatedAt = token.updatedAt as Date;
 			}
 			return session;
 		},
@@ -81,28 +87,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			// Allows callback URLs on the same origin
 			else if (new URL(url).origin === baseUrl) return url;
 			return baseUrl;
-		},
-	},
-	events: {
-		async signIn({ user, isNewUser }) {
-			try {
-				// If it's a new user or email not verified, automatically send verification email
-				if (isNewUser || (!user.emailVerified && user.email)) {
-					// create a verification token and send email
-					const { token, code } = await createVerificationToken(
-						user.email as string
-					);
-					if (token) {
-						await sendVerificationEmail(
-							user.email as string,
-							token,
-							code
-						);
-					}
-				}
-			} catch (error) {
-				console.error("Error sending verification email:", error);
-			}
 		},
 	},
 	pages: {

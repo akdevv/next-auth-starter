@@ -1,164 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { useForm } from "react-hook-form";
-import { Pencil } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import Image from "next/image";
-// import ImageUpload from "../shared/image-upload";
-
-interface ProfileFormValues {
-	name: string;
-	email: string;
-	avatar: string;
-}
+import { FaUser } from "react-icons/fa";
+import { useSession } from "next-auth/react";
 
 export default function ProfileSection() {
 	const { data: session } = useSession();
-	const [editProfileOpen, setEditProfileOpen] = useState<boolean>(false);
-
-	const form = useForm<ProfileFormValues>({
-		defaultValues: {
-			name: session?.user?.name || "",
-			email: session?.user?.email || "",
-			avatar: session?.user?.image || "",
-		},
-	});
-
-	const { register, handleSubmit, setValue } = form;
-
-	const handleProfileUpdate = handleSubmit(() => {
-		// Handle profile update logic here
-		setEditProfileOpen(false);
-	});
-
-	const handleAvatarUpload = (url: string) => {
-		setValue("avatar", url);
-	};
 
 	return (
 		<section className="flex flex-col w-full">
-			<div className="flex w-full items-center justify-between gap-2 mb-5">
-				<h2 className="text-xl font-semibold">Profile Information</h2>
-				<Button
-					className="bg-transparent hover:bg-accent/10 rounded-full h-9 w-9 p-0 shadow-none text-muted-foreground cursor-pointer transition-all duration-300"
-					disabled={editProfileOpen}
-					onClick={() => setEditProfileOpen(true)}
-				>
-					<Pencil className="h-4 w-4" />
-				</Button>
-			</div>
+			<h2 className="text-lg lg:text-xl font-semibold mb-4 lg:mb-5">
+				Profile Information
+			</h2>
 
 			{/* Profile Information */}
-			{!editProfileOpen ? (
-				<div className="flex flex-col md:flex-row items-start gap-6">
-					<div className="w-full md:w-1/4 max-w-[180px]">
-						<div className="overflow-hidden rounded-xl aspect-square w-full bg-muted/20 border-2 border-border/50 flex items-center justify-center">
+
+			<div className="flex flex-col md:flex-row items-start gap-4 lg:gap-6">
+				<div className="w-full md:w-1/4 max-w-[140px] lg:max-w-[180px]">
+					<div className="overflow-hidden rounded-xl aspect-square w-full bg-muted/20 border-2 border-border/50 flex items-center justify-center">
+						{session?.user?.image ? (
 							<Image
 								src={session?.user?.image ?? ""}
 								alt={session?.user?.name ?? ""}
-								width={100}
-								height={100}
+								width={500}
+								height={500}
 								className="w-full h-full object-cover"
 							/>
-						</div>
-					</div>
-
-					<div className="flex-grow space-y-4">
-						<div>
-							<h3 className="text-2xl font-semibold">
-								{session?.user?.name}
-							</h3>
-							<p className="text-muted-foreground">
-								{session?.user?.email}
-							</p>
-							{session?.user && (
-								<span className="inline-flex items-center mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-									<span className="w-1 h-1 bg-green-400 rounded-full mr-1"></span>
-									Email verified
-								</span>
-							)}
-						</div>
-
-						<div className="pt-2">
-							<p className="text-sm text-muted-foreground">
-								Account created on{" "}
-								{new Date("12-12-2024").toLocaleDateString(
-									"en-US",
-									{
-										year: "numeric",
-										month: "long",
-										day: "numeric",
-									}
-								)}
-							</p>
-						</div>
+						) : (
+							<FaUser className="h-8 w-8 lg:h-10 lg:w-10 text-muted-foreground" />
+						)}
 					</div>
 				</div>
-			) : (
-				<form onSubmit={handleProfileUpdate} className="space-y-6">
-					<div className="flex flex-col md:flex-row items-start gap-6">
-						{/* <ImageUpload
-							currentImage={watch("avatar")}
-							onUpload={handleAvatarUpload}
-							className="w-full md:w-1/4 max-w-[200px]"
-						/> */}
-						<Button onClick={() => handleAvatarUpload("")}>
-							Upload Avatar
-						</Button>
 
-						<div className="flex-grow space-y-4 w-full">
-							<div className="space-y-2">
-								<label
-									htmlFor="name"
-									className="text-sm font-medium"
-								>
-									Full Name
-								</label>
-								<Input id="name" {...register("name")} />
-							</div>
-
-							<div className="space-y-2">
-								<label
-									htmlFor="email"
-									className="text-sm font-medium flex items-center justify-between"
-								>
-									<span>Email</span>
-									{session?.user && (
-										<span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-											Verified
-										</span>
-									)}
-								</label>
-								<Input
-									id="email"
-									type="email"
-									{...register("email")}
-								/>
-							</div>
-
-							<div className="pt-2 flex justify-end">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setEditProfileOpen(false)}
-									className="mr-2"
-								>
-									Cancel
-								</Button>
-								<Button
-									type="submit"
-									className="bg-primary text-primary-foreground hover:bg-primary/90"
-								>
-									Save changes
-								</Button>
-							</div>
-						</div>
+				<div className="flex-grow space-y-3 lg:space-y-4">
+					<div>
+						<h3 className="text-xl lg:text-2xl font-semibold">
+							{session?.user?.name}
+						</h3>
+						<p className="text-muted-foreground">
+							{session?.user?.email}
+						</p>
+						{session?.user && (
+							<span
+								className={`inline-flex items-center mt-1 text-xs px-2 py-0.5 rounded-full ${
+									session?.user?.emailVerified
+										? "bg-green-500/20 text-chart-3"
+										: "bg-red-500/20 text-chart-4"
+								}`}
+							>
+								<span
+									className={`w-1 h-1 rounded-full mr-1 ${
+										session?.user?.emailVerified
+											? "bg-chart-3"
+											: "bg-chart-4"
+									}`}
+								></span>
+								{session?.user?.emailVerified
+									? "Email Verified"
+									: "Email Unverified"}
+							</span>
+						)}
 					</div>
-				</form>
-			)}
+
+					<div className="pt-2">
+						<p className="text-sm text-muted-foreground">
+							Account created on{" "}
+							{new Date(
+								session?.user?.createdAt as Date
+							).toLocaleDateString("en-US", {
+								year: "numeric",
+								month: "long",
+								day: "numeric",
+							})}
+						</p>
+					</div>
+				</div>
+			</div>
 		</section>
 	);
 }
