@@ -61,11 +61,13 @@ export function DeleteDialog({ open, onOpenChange }: DeleteDialogProps) {
 				</AlertDialogHeader>
 				<div className="space-y-2 py-4">
 					<Label>
-						<span>Please type</span>
-						<span className="text-chart-4">
-							"delete my account"
-						</span>
-						<span>to confirm</span>
+						<p className="text-xs md:text-base">
+							<span>Please type</span>{" "}
+							<span className="text-chart-4">
+								"delete my account"
+							</span>{" "}
+							<span>to confirm</span>
+						</p>
 					</Label>
 					<Input
 						value={confirmText}

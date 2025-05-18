@@ -22,16 +22,18 @@ export default async function middleware(req: NextRequest) {
 		"/auth/login",
 		"/auth/register",
 		"/auth/error",
-		"/auth/reset-password",
+		"/auth/forgot-password",
 	];
 
 	// handle verification routes
 	const isVerificationRoute = pathname.startsWith("/auth/verify-email");
+	const isForgotPasswordRoute = pathname.startsWith("/auth/forgot-password");
 
 	// if user is not authenticated
 	if (!token) {
-		// allow access to public routes
-		if (publicRoutes.includes(pathname)) {
+		console.log("user is not authenticated");
+		// allow access to public routes and forgot password routes
+		if (publicRoutes.includes(pathname) || isForgotPasswordRoute) {
 			return NextResponse.next();
 		}
 
@@ -67,7 +69,7 @@ export default async function middleware(req: NextRequest) {
 			pathname.startsWith("/auth/login") ||
 			pathname.startsWith("/auth/register") ||
 			pathname.startsWith("/auth/error") ||
-			pathname.startsWith("/auth/reset-password") ||
+			pathname.startsWith("/auth/forgot-password") ||
 			pathname.startsWith("/auth/verify-email")
 		) {
 			return NextResponse.redirect(new URL("/", req.url));

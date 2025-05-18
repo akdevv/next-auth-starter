@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export default function VerifyEmailPage() {
+export default function VerifyEmail() {
 	const router = useRouter();
 	const { data: session, status } = useSession();
 	const [isPending, setIsPending] = useState(false);

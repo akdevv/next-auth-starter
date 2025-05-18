@@ -8,7 +8,7 @@ export default function ProfileSection() {
 	const { data: session } = useSession();
 
 	return (
-		<section className="flex flex-col w-full">
+		<section className="flex flex-col border border-border rounded-lg p-4 lg:p-5 w-full h-full bg-secondary/10">
 			<h2 className="text-lg lg:text-xl font-semibold mb-4 lg:mb-5">
 				Profile Information
 			</h2>

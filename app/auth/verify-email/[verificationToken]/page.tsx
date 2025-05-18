@@ -16,7 +16,7 @@ import {
 // import { cn } from "@/lib/utils";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
-export default function VerifyEmail({
+export default function VerifyEmailPage({
 	params,
 }: {
 	params: Promise<{ verificationToken: string }>;

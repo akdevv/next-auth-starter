@@ -38,11 +38,9 @@ export default function Profile() {
 
 				{/* Main Content */}
 				<div className="flex border border-border rounded-lg p-4 lg:p-8 w-full max-w-4xl h-fit">
-					<div className="flex border border-border rounded-lg p-4 lg:p-5 w-full h-full bg-secondary/10">
-						{activeSection === "profile" && <ProfileSection />}
-						{activeSection === "security" && <SecuritySection />}
-						{activeSection === "devices" && <DevicesSection />}
-					</div>
+					{activeSection === "profile" && <ProfileSection />}
+					{activeSection === "security" && <SecuritySection />}
+					{activeSection === "devices" && <DevicesSection />}
 				</div>
 			</main>
 			<Footer />

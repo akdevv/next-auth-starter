@@ -8,7 +8,7 @@ import { registerSchema } from "@/schema/auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { registerUser } from "@/lib/actions/auth";
+import { registerUser } from "@/server/actions/auth";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
