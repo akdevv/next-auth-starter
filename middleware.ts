@@ -31,7 +31,6 @@ export default async function middleware(req: NextRequest) {
 
 	// if user is not authenticated
 	if (!token) {
-		console.log("user is not authenticated");
 		// allow access to public routes and forgot password routes
 		if (publicRoutes.includes(pathname) || isForgotPasswordRoute) {
 			return NextResponse.next();

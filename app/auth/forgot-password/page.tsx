@@ -16,7 +16,6 @@ export default function ForgotPassword() {
 		setIsPending(true);
 
 		try {
-			console.log("sending request");
 			const res = await fetch("/api/auth/forgot-password/request", {
 				method: "POST",
 				body: JSON.stringify(data),

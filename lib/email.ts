@@ -37,8 +37,6 @@ async function sendVerificationEmail(
 
 async function sendForgotPasswordEmail(email: string, secureUrl: string) {
 	try {
-		console.log("sending forgot password email to", email);
-		console.log("secureUrl", secureUrl);
 		const { data, error } = await resend.emails.send({
 			from: "buildlabs <no-reply@buildlabs.me>",
 			to: email,

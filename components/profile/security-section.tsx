@@ -1,7 +1,21 @@
-import { Button } from "../ui/button";
+"use client";
+
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 import { MdLockOpen, MdOutlineShield } from "react-icons/md";
+import { formatDistanceToNow } from "date-fns";
+import { UpdatePasswordDialog } from "./dialogs/update-password-dialog";
+import { useState } from "react";
 
 export default function SecuritySection() {
+	const { data: session } = useSession();
+	const [updatePasswordDialogOpen, setUpdatePasswordDialogOpen] =
+		useState(false);
+
+	const openUpdatePasswordDialog = () => {
+		setUpdatePasswordDialogOpen(true);
+	};
+
 	return (
 		<section className="flex flex-col w-full space-y-4 lg:space-y-6">
 			<div className="flex flex-col border border-border rounded-lg p-3 sm:p-4 lg:p-5 w-full h-full bg-secondary/10">
@@ -14,7 +28,10 @@ export default function SecuritySection() {
 							Update your password to keep your account secure.
 						</p>
 					</div>
-					<Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background text-foreground border border-border hover:bg-foreground/5 hover:text-foreground/60 cursor-pointer">
+					<Button
+						onClick={openUpdatePasswordDialog}
+						className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background text-foreground border border-border hover:bg-foreground/5 hover:text-foreground/60 cursor-pointer"
+					>
 						<MdLockOpen className="w-4 h-4" />
 						Change Password
 					</Button>
@@ -30,7 +47,15 @@ export default function SecuritySection() {
 								Password strength
 							</p>
 							<p className="text-[10px] sm:text-xs text-muted-foreground">
-								Your password was last updated 30 days ago
+								Your password was last updated{" "}
+								{session?.user?.lastPasswordUpdate
+									? formatDistanceToNow(
+											new Date(
+												session?.user?.lastPasswordUpdate
+											)
+										)
+									: "never"}
+								.
 							</p>
 						</div>
 					</div>
@@ -96,6 +121,12 @@ export default function SecuritySection() {
 					</div>
 				)}
 			</div>
+
+			{/* Dialogs */}
+			<UpdatePasswordDialog
+				open={updatePasswordDialogOpen}
+				onOpenChange={setUpdatePasswordDialogOpen}
+			/>
 		</section>
 	);
 }

@@ -13,7 +13,6 @@ export default function ResetPasswordPage({
 }: {
 	params: { secureUrl: string };
 }) {
-	console.log("this page is being loaded");
 	const [isValid, setIsValid] = useState(false);
 	const [isPending, setIsPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);

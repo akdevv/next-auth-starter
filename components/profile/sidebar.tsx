@@ -6,8 +6,8 @@ import { useSession } from "next-auth/react";
 import { Button } from "../ui/button";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MdOutlineLogout } from "react-icons/md";
-import { DeleteDialog } from "./modals/delete-dialog";
-import { LogoutDialog } from "./modals/logout-dialog";
+import { DeleteDialog } from "./dialogs/delete-dialog";
+import { LogoutDialog } from "./dialogs/logout-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Sidebar({

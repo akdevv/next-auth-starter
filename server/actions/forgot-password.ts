@@ -48,7 +48,6 @@ const forgotPassword = async (email: string) => {
 
 		// generate reset URL
 		const secureUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/forgot-password/${token}`;
-		console.log("secureUrl", secureUrl);
 
 		// send email
 		await sendForgotPasswordEmail(email, secureUrl);

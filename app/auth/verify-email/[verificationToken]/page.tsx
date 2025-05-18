@@ -35,7 +35,6 @@ export default function VerifyEmailPage({
 	const { data: session, status } = useSession();
 	// const { data: session, status, update } = useSession();
 
-	console.log(timeLeft, attempts, maxAttempts);
 
 	// timer for countdown
 	useEffect(() => {

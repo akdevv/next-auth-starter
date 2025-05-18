@@ -4,12 +4,11 @@ import { db } from "@/lib/prisma";
 import google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
-import { createVerificationToken } from "./actions/verification";
-import { sendVerificationEmail } from "./email";
 
 declare module "next-auth" {
 	interface User {
 		emailVerified: Date | null;
+		lastPasswordUpdate: Date | null;
 		createdAt: Date;
 		updatedAt: Date;
 	}
@@ -62,6 +61,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			if (user) {
 				token.id = user.id;
 				token.emailVerified = user.emailVerified;
+				token.lastPasswordUpdate = user.lastPasswordUpdate;
 				token.createdAt = user.createdAt;
 				token.updatedAt = user.updatedAt;
 			}
@@ -71,6 +71,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			if (session.user) {
 				session.user.id = token.id as string;
 				session.user.emailVerified = token.emailVerified as Date | null;
+				session.user.lastPasswordUpdate =
+					token.lastPasswordUpdate as Date | null;
 				session.user.createdAt = token.createdAt as Date;
 				session.user.updatedAt = token.updatedAt as Date;
 			}
