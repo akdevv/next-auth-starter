@@ -5,13 +5,10 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
-import SearchBar from "./searchbar";
 import { Button } from "../ui/button";
 import { FiMenu, FiX } from "react-icons/fi";
-import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-	const pathname = usePathname();
 	const { data: session, status } = useSession();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -42,7 +39,7 @@ export default function Navbar() {
 						{/* Logo - Hidden on mobile when menu is closed */}
 						<div
 							className={cn(
-								"text-xl md:text-2xl font-bold w-full md:w-auto text-center md:text-left",
+								"text-md md:text-xl font-bold w-full md:w-auto text-center md:text-left",
 								"md:block",
 								isMobileMenuOpen ? "block" : "hidden"
 							)}
@@ -54,7 +51,7 @@ export default function Navbar() {
 						</div>
 
 						{/* Desktop Navigation */}
-						<div className="hidden md:flex gap-2">
+						<div className="hidden md:flex gap-2 text-sm">
 							<nav className="hidden md:flex gap-5">
 								<Link
 									href="/"
@@ -77,13 +74,6 @@ export default function Navbar() {
 							</nav>
 						</div>
 					</div>
-
-					{/* Auth Buttons / Search Bar */}
-					{pathname === "/docs" && session?.user && (
-						<div className="w-full md:max-w-xs">
-							<SearchBar />
-						</div>
-					)}
 
 					<div
 						className={cn(
@@ -150,7 +140,7 @@ export default function Navbar() {
 
 					{/* Navigation Links */}
 					<div className="p-6">
-						<nav className="flex flex-col gap-4">
+						<nav className="flex flex-col gap-4 text-sm">
 							<Link
 								href="/"
 								className="text-lg hover:text-accent hover:underline underline-offset-4 transition-all duration-300"
@@ -175,7 +165,7 @@ export default function Navbar() {
 						</nav>
 
 						{!session?.user && (
-							<div className="flex flex-col gap-2 mt-6">
+							<div className="flex flex-col gap-2 mt-10">
 								<Button
 									className="w-full bg-background text-secondary border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300"
 									asChild
