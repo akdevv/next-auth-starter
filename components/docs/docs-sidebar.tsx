@@ -48,41 +48,99 @@ export function DocsSidebar({ isOpen, className }: DocsSidebarProps) {
 			{/* Overlay for mobile */}
 			{isOpen && (
 				<div
-					className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm md:hidden"
+					className="fixed inset-0 z-20 bg-background/80 backdrop-blur-sm md:hidden"
 					onClick={() => toggleSection("")}
 				/>
 			)}
 			{/* Sidebar */}
 			<aside
 				className={cn(
-					"absolute md:relative inset-y-0 left-0 z-30 w-64 transform bg-background border-r transition-transform duration-300 ease-in-out",
+					"fixed md:sticky top-0 left-0 z-30 w-64 h-[calc(100vh-10rem)] transform bg-background border-r transition-transform duration-300 ease-in-out",
 					isOpen
 						? "translate-x-0"
 						: "-translate-x-full md:translate-x-0",
 					className
 				)}
 			>
-				<div className="h-full overflow-y-auto pt-20 pb-4">
-					<div className="px-4 mb-4">
+				<div className="flex flex-col h-full">
+					<div className="px-4 py-4 border-b">
 						<h2 className="text-lg font-semibold">Documentation</h2>
 					</div>
-					<nav className="space-y-1 px-2">
-						{docLinks.map((section) => (
-							<div key={section.href} className="pb-1">
-								{section.subsections ? (
-									<Collapsible
-										open={openSections.includes(
-											section.href
-										)}
-										onOpenChange={() =>
-											toggleSection(section.href)
-										}
-									>
-										<CollapsibleTrigger asChild>
+					<nav className="flex-1 overflow-y-auto px-2 py-4">
+						<div className="space-y-1">
+							{docLinks.map((section) => (
+								<div key={section.href} className="pb-1">
+									{section.subsections ? (
+										<Collapsible
+											open={openSections.includes(
+												section.href
+											)}
+											onOpenChange={() =>
+												toggleSection(section.href)
+											}
+										>
+											<CollapsibleTrigger asChild>
+												<Button
+													variant="ghost"
+													className={cn(
+														"w-full justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+														pathname ===
+															section.href &&
+															"bg-accent text-accent-foreground"
+													)}
+												>
+													<div className="flex items-center">
+														{section.icon}
+														<span className="ml-2">
+															{section.label}
+														</span>
+													</div>
+													{openSections.includes(
+														section.href
+													) ? (
+														<MdOutlineKeyboardArrowDown className="h-4 w-4" />
+													) : (
+														<MdOutlineKeyboardArrowRight className="h-4 w-4" />
+													)}
+												</Button>
+											</CollapsibleTrigger>
+											<CollapsibleContent>
+												<div className="pl-6 space-y-1 mt-1">
+													{section.subsections.map(
+														(subsection) => (
+															<Link
+																key={
+																	subsection.href
+																}
+																href={
+																	subsection.href
+																}
+															>
+																<Button
+																	variant="ghost"
+																	className={cn(
+																		"w-full justify-start rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+																		pathname ===
+																			subsection.href &&
+																			"bg-accent/5 text-muted-foreground"
+																	)}
+																>
+																	{
+																		subsection.label
+																	}
+																</Button>
+															</Link>
+														)
+													)}
+												</div>
+											</CollapsibleContent>
+										</Collapsible>
+									) : (
+										<Link href={section.href}>
 											<Button
 												variant="ghost"
 												className={cn(
-													"w-full justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+													"w-full justify-start rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
 													pathname === section.href &&
 														"bg-accent text-accent-foreground"
 												)}
@@ -93,67 +151,12 @@ export function DocsSidebar({ isOpen, className }: DocsSidebarProps) {
 														{section.label}
 													</span>
 												</div>
-												{openSections.includes(
-													section.href
-												) ? (
-													<MdOutlineKeyboardArrowDown className="h-4 w-4" />
-												) : (
-													<MdOutlineKeyboardArrowRight className="h-4 w-4" />
-												)}
 											</Button>
-										</CollapsibleTrigger>
-										<CollapsibleContent>
-											<div className="pl-6 space-y-1 mt-1">
-												{section.subsections.map(
-													(subsection) => (
-														<Link
-															key={
-																subsection.href
-															}
-															href={
-																subsection.href
-															}
-														>
-															<Button
-																variant="ghost"
-																className={cn(
-																	"w-full justify-start rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-																	pathname ===
-																		subsection.href &&
-																		"bg-accent/5 text-muted-foreground"
-																)}
-															>
-																{
-																	subsection.label
-																}
-															</Button>
-														</Link>
-													)
-												)}
-											</div>
-										</CollapsibleContent>
-									</Collapsible>
-								) : (
-									<Link href={section.href}>
-										<Button
-											variant="ghost"
-											className={cn(
-												"w-full justify-start rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-												pathname === section.href &&
-													"bg-accent text-accent-foreground"
-											)}
-										>
-											<div className="flex items-center">
-												{section.icon}
-												<span className="ml-2">
-													{section.label}
-												</span>
-											</div>
-										</Button>
-									</Link>
-								)}
-							</div>
-						))}
+										</Link>
+									)}
+								</div>
+							))}
+						</div>
 					</nav>
 				</div>
 			</aside>
