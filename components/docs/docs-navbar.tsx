@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import CommandSearch from "./command-search";
 import { FiCommand } from "react-icons/fi";
 
-export default function DocsNavbar() {
+export default function DocsNavbar({
+	toggleSidebar,
+}: {
+	toggleSidebar: () => void;
+}) {
 	const [searchOpen, setSearchOpen] = useState(false);
 
 	return (
@@ -21,7 +25,7 @@ export default function DocsNavbar() {
 							variant="ghost"
 							size="icon"
 							className="md:hidden"
-							onClick={() => {}}
+							onClick={toggleSidebar}
 						>
 							<FiMenu className="h-5 w-5" />
 							<span className="sr-only">Toggle sidebar</span>

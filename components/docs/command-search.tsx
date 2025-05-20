@@ -1,5 +1,4 @@
 import {
-	Command,
 	CommandDialog,
 	CommandEmpty,
 	CommandGroup,
@@ -9,51 +8,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 
-import { FaDatabase } from "react-icons/fa6";
-import { FaUnlock, FaTools } from "react-icons/fa";
-import { IoExtensionPuzzle } from "react-icons/io5";
-import { MdMarkEmailUnread } from "react-icons/md";
+import { docLinks } from "@/content";
+import { BsFileText } from "react-icons/bs";
 
 interface CommandSearchProps {
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }
-
-const docLinks: {
-	label: string;
-	href: string;
-	icon: React.ReactNode;
-}[] = [
-	{
-		label: "Getting Started",
-		href: "/docs/getting-started",
-		icon: <FaTools className="mr-2 h-4 w-4 hover:text-foreground" />,
-	},
-	{
-		label: "Authentication",
-		href: "/docs/auth",
-		icon: <FaUnlock className="mr-2 h-4 w-4 hover:text-foreground" />,
-	},
-	{
-		label: "Database & Backend",
-		href: "/docs/db-and-backend",
-		icon: <FaDatabase className="mr-2 h-4 w-4 hover:text-foreground" />,
-	},
-	{
-		label: "Auth Logic & Middleware",
-		href: "/docs/auth-logic-middleware",
-		icon: (
-			<IoExtensionPuzzle className="mr-2 h-4 w-4 hover:text-foreground" />
-		),
-	},
-	{
-		label: "Email Features",
-		href: "/docs/email-features",
-		icon: (
-			<MdMarkEmailUnread className="mr-2 h-4 w-4 hover:text-foreground" />
-		),
-	},
-];
 
 export default function CommandSearch({
 	open,
@@ -89,19 +50,21 @@ export default function CommandSearch({
 		<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
 			<CommandInput placeholder="Type a command or search..." />
 			<CommandEmpty>No results found.</CommandEmpty>
-			<CommandGroup heading="Links">
-				{docLinks.map((link) => (
-					<CommandItem
-						key={link.href}
-						onSelect={() =>
-							runCommand(() => router.push(link.href))
-						}
-					>
-						{link.icon}
-						<span>{link.label}</span>
-					</CommandItem>
-				))}
-			</CommandGroup>
+			{docLinks.map((link) => (
+				<CommandGroup key={link.href} heading={link.label}>
+					{link.subsections?.map((subsection) => (
+						<CommandItem
+							key={subsection.href}
+							onSelect={() =>
+								runCommand(() => router.push(subsection.href))
+							}
+						>
+							<BsFileText className="mr-2 h-4 w-4 hover:text-foreground" />
+							<span>{subsection.label}</span>
+						</CommandItem>
+					))}
+				</CommandGroup>
+			))}
 		</CommandDialog>
 	);
 }

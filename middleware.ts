@@ -26,13 +26,18 @@ export default async function middleware(req: NextRequest) {
 	];
 
 	// handle verification routes
+	const isDocsRoute = pathname.startsWith("/docs");
 	const isVerificationRoute = pathname.startsWith("/auth/verify-email");
 	const isForgotPasswordRoute = pathname.startsWith("/auth/forgot-password");
 
 	// if user is not authenticated
 	if (!token) {
 		// allow access to public routes and forgot password routes
-		if (publicRoutes.includes(pathname) || isForgotPasswordRoute) {
+		if (
+			publicRoutes.includes(pathname) ||
+			isDocsRoute ||
+			isForgotPasswordRoute
+		) {
 			return NextResponse.next();
 		}
 
