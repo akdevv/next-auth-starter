@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/schema/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { registerUser } from "@/server/actions/auth";
@@ -25,6 +25,16 @@ export default function Register() {
 	const [isPending, setIsPending] = useState<boolean>(false);
 	const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);
 	const [showPassword, setShowPassword] = useState(false);
+	const [callbackUrl, setCallbackUrl] = useState<string>("/profile");
+
+	// Get callback URL from search params
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const callback = params.get("callbackUrl");
+		if (callback) {
+			setCallbackUrl(decodeURIComponent(callback));
+		}
+	}, []);
 
 	const {
 		register,
@@ -72,7 +82,7 @@ export default function Register() {
 			});
 
 			if (!signInResult?.error) {
-				router.push("/profile");
+				router.push(callbackUrl);
 			} else {
 				setError(
 					"Account created but failed to sign in. Please try logging in."
@@ -213,7 +223,7 @@ export default function Register() {
 						onClick={() => {
 							if (agreeToTerms) {
 								signIn("google", {
-									callbackUrl: "/profile",
+									callbackUrl,
 								});
 							} else {
 								toast.error(

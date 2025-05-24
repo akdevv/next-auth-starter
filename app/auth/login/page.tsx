@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,16 @@ export default function Login() {
 	const [isPending, setIsPending] = useState(false);
 	const [rememberMe, setRememberMe] = useState(true);
 	const [showPassword, setShowPassword] = useState(false);
+	const [callbackUrl, setCallbackUrl] = useState<string>("/profile");
+
+	// Get callback URL from search params
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const callback = params.get("callbackUrl");
+		if (callback) {
+			setCallbackUrl(decodeURIComponent(callback));
+		}
+	}, []);
 
 	const {
 		register,
@@ -54,7 +64,7 @@ export default function Login() {
 					toast.error(errorMessage);
 				}
 			} else {
-				router.push("/profile");
+				router.push(callbackUrl);
 			}
 		} catch (err) {
 			const errorMessage =
@@ -179,9 +189,7 @@ export default function Login() {
 				<div className="flex items-center justify-center space-x-4">
 					<Button
 						type="button"
-						onClick={() =>
-							signIn("google", { callbackUrl: "/profile" })
-						}
+						onClick={() => signIn("google", { callbackUrl })}
 						className="w-full py-5 bg-secondary/30 text-secondary-foreground border border-secondary hover:bg-accent hover:text-accent-foreground hover:border-accent transition-all duration-300 cursor-pointer"
 					>
 						<FaGoogle className="w-5 h-5" /> Continue with Google

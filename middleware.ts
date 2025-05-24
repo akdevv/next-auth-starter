@@ -41,8 +41,14 @@ export default async function middleware(req: NextRequest) {
 			return NextResponse.next();
 		}
 
-		// redirect to login page
-		return NextResponse.redirect(new URL("/auth/login", req.url));
+		// Get the full URL including search params
+		const fullUrl = req.nextUrl.pathname + req.nextUrl.search;
+		const encodedCallbackUrl = encodeURIComponent(fullUrl);
+
+		// redirect to login page with callback URL
+		return NextResponse.redirect(
+			new URL(`/auth/login?callbackUrl=${encodedCallbackUrl}`, req.url)
+		);
 	}
 
 	// user is authenticated but not verified
