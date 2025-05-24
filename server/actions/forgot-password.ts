@@ -11,7 +11,7 @@ import {
 	getVerificationAttemptByToken,
 	markAttemptAsSuccessful,
 } from "@/server/db/verificationAttempt";
-import { getUserByEmail, updatePassword } from "@/server/db/user";
+import { getUserByEmail, updateUser } from "@/server/db/user";
 
 const generateToken = (): string => {
 	return crypto.randomBytes(32).toString("hex");
@@ -96,7 +96,10 @@ const resetPassword = async (token: string, newPassword: string) => {
 		const hashedPassword = await hashPassword(newPassword);
 
 		// update password & tracking fields
-		await updatePassword(user.id, hashedPassword);
+		await updateUser(user.id, {
+			password: hashedPassword,
+			lastPasswordUpdate: new Date(),
+		});
 
 		// mark the attempt as successful
 		await markAttemptAsSuccessful(attempt.id);

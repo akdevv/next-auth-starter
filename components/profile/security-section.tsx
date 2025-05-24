@@ -11,9 +11,15 @@ export default function SecuritySection() {
 	const { data: session } = useSession();
 	const [updatePasswordDialogOpen, setUpdatePasswordDialogOpen] =
 		useState(false);
+	const [toggleTwoFactorDialogOpen, setToggleTwoFactorDialogOpen] =
+		useState(false);
 
 	const openUpdatePasswordDialog = () => {
 		setUpdatePasswordDialogOpen(true);
+	};
+
+	const openToggleTwoFactorDialog = () => {
+		setToggleTwoFactorDialogOpen(true);
 	};
 
 	return (
@@ -72,7 +78,7 @@ export default function SecuritySection() {
 							Add an extra layer of security to your account.
 						</p>
 					</div>
-					{!true ? (
+					{true ? (
 						<Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer">
 							<MdOutlineShield className="w-4 h-4" />
 							Enable 2FA
@@ -127,6 +133,10 @@ export default function SecuritySection() {
 				open={updatePasswordDialogOpen}
 				onOpenChange={setUpdatePasswordDialogOpen}
 			/>
+			{/* <ToggleTwoFactorDialog
+				open={toggleTwoFactorDialogOpen}
+				onOpenChange={setToggleTwoFactorDialogOpen}
+			/> */}
 		</section>
 	);
 }

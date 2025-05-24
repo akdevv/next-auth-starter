@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
 	validateVerificationCode,
 	verifyEmail,
-} from "@/lib/actions/verification";
+} from "@/server/actions/verification";
 
 export async function POST(req: NextRequest) {
 	try {

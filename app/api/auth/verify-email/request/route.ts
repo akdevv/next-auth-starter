@@ -4,7 +4,7 @@ import { sendVerificationEmail } from "@/lib/email";
 import {
 	createVerificationToken,
 	getTotalVerificationAttempts,
-} from "@/lib/actions/verification";
+} from "@/server/actions/verification";
 
 export async function POST() {
 	try {

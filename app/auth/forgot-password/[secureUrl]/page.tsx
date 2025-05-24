@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
+
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { LuEyeClosed, LuEye } from "react-icons/lu";
 
 export default function ResetPasswordPage({
@@ -20,12 +21,10 @@ export default function ResetPasswordPage({
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const router = useRouter();
-	const { register, handleSubmit, watch } = useForm<{
+	const { register, handleSubmit } = useForm<{
 		password: string;
 		confirmPassword: string;
 	}>();
-
-	const password = watch("password");
 
 	useEffect(() => {
 		const verifyToken = async () => {

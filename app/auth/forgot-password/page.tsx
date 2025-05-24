@@ -30,10 +30,10 @@ export default function ForgotPassword() {
 					"Password reset email sent! Please check your inbox."
 				);
 			}
-		} catch (error: any) {
+		} catch (error) {
 			console.error(error);
-			setError(error.message || "Failed to reset password");
-			toast.error(error.message || "Failed to reset password");
+			setError((error as Error).message || "Failed to reset password");
+			toast.error((error as Error).message || "Failed to reset password");
 		} finally {
 			setIsPending(false);
 		}
