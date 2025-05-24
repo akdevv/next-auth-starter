@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { QUERIES } from "@/server/db/user";
+import { deleteUser } from "@/server/db/user";
 import { NextResponse } from "next/server";
 
 export async function DELETE() {
@@ -13,7 +13,7 @@ export async function DELETE() {
 			);
 		}
 
-		const user = await QUERIES.deleteUser(session.user.id);
+		const user = await deleteUser(session.user.id);
 
 		return NextResponse.json({ success: true, user });
 	} catch (error) {

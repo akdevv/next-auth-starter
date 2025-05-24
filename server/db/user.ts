@@ -1,4 +1,5 @@
 import { db } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const getUserByEmail = async (email: string) => {
 	return await db.user.findUnique({ where: { email } });
@@ -12,15 +13,8 @@ const deleteUser = async (id: string) => {
 	return await db.user.delete({ where: { id } });
 };
 
-const updatePassword = async (id: string, password: string) => {
-	return await db.user.update({
-		where: { id },
-		data: {
-			password,
-			lastPasswordUpdate: new Date(),
-			passwordUpdateCount: { increment: 1 },
-		},
-	});
+const updateUser = async (id: string, data: Prisma.UserUpdateInput) => {
+	return await db.user.update({ where: { id }, data });
 };
 
-export { getUserByEmail, getUserById, deleteUser, updatePassword };
+export { getUserByEmail, getUserById, deleteUser, updateUser };
