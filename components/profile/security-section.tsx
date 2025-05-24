@@ -1,25 +1,37 @@
 "use client";
 
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { MdLockOpen, MdOutlineShield } from "react-icons/md";
 import { formatDistanceToNow } from "date-fns";
+
+import { MdLockOpen, MdOutlineShield } from "react-icons/md";
+import { Enable2FADialog } from "./dialogs/enable-2fa-dialog";
+import { Disable2FADialog } from "./dialogs/disable-2fa-dialog";
 import { UpdatePasswordDialog } from "./dialogs/update-password-dialog";
-import { useState } from "react";
 
 export default function SecuritySection() {
 	const { data: session } = useSession();
+
+	const [twoFactorEnabled, setTwoFactorEnabled] = useState(
+		session?.user?.twoFactorEnabled || false
+	);
+
+	const [enable2FADialogOpen, setEnable2FADialogOpen] = useState(false);
+	const [disable2FADialogOpen, setDisable2FADialogOpen] = useState(false);
 	const [updatePasswordDialogOpen, setUpdatePasswordDialogOpen] =
 		useState(false);
-	const [toggleTwoFactorDialogOpen, setToggleTwoFactorDialogOpen] =
-		useState(false);
+
+	const openEnable2FADialog = () => {
+		setEnable2FADialogOpen(true);
+	};
+
+	const openDisable2FADialog = () => {
+		setDisable2FADialogOpen(true);
+	};
 
 	const openUpdatePasswordDialog = () => {
 		setUpdatePasswordDialogOpen(true);
-	};
-
-	const openToggleTwoFactorDialog = () => {
-		setToggleTwoFactorDialogOpen(true);
 	};
 
 	return (
@@ -78,20 +90,26 @@ export default function SecuritySection() {
 							Add an extra layer of security to your account.
 						</p>
 					</div>
-					{true ? (
-						<Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer">
-							<MdOutlineShield className="w-4 h-4" />
-							Enable 2FA
-						</Button>
-					) : (
-						<Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background text-foreground border border-border hover:bg-foreground/5 hover:text-foreground/60 cursor-pointer">
+					{twoFactorEnabled ? (
+						<Button
+							onClick={openDisable2FADialog}
+							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background text-foreground border border-border hover:bg-foreground/5 hover:text-foreground/60 cursor-pointer"
+						>
 							<MdOutlineShield className="w-4 h-4" />
 							Disable 2FA
+						</Button>
+					) : (
+						<Button
+							onClick={openEnable2FADialog}
+							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-accent text-accent-foreground hover:bg-accent/90 cursor-pointer"
+						>
+							<MdOutlineShield className="w-4 h-4" />
+							Enable 2FA
 						</Button>
 					)}
 				</div>
 
-				{!true ? (
+				{twoFactorEnabled ? (
 					<div className="bg-muted/30 rounded-xl p-3 sm:p-4 mt-4">
 						<div className="flex items-center space-x-3">
 							<div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-chart-3/20 flex items-center justify-center">
@@ -133,10 +151,14 @@ export default function SecuritySection() {
 				open={updatePasswordDialogOpen}
 				onOpenChange={setUpdatePasswordDialogOpen}
 			/>
-			{/* <ToggleTwoFactorDialog
-				open={toggleTwoFactorDialogOpen}
-				onOpenChange={setToggleTwoFactorDialogOpen}
-			/> */}
+			<Enable2FADialog
+				open={enable2FADialogOpen}
+				onOpenChange={setEnable2FADialogOpen}
+			/>
+			<Disable2FADialog
+				open={disable2FADialogOpen}
+				onOpenChange={setDisable2FADialogOpen}
+			/>
 		</section>
 	);
 }

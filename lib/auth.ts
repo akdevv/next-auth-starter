@@ -9,6 +9,7 @@ declare module "next-auth" {
 	interface User {
 		emailVerified: Date | null;
 		lastPasswordUpdate: Date | null;
+		twoFactorEnabled: boolean;
 		createdAt: Date;
 		updatedAt: Date;
 	}
@@ -62,6 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				token.id = user.id;
 				token.emailVerified = user.emailVerified;
 				token.lastPasswordUpdate = user.lastPasswordUpdate;
+				token.twoFactorEnabled = user.twoFactorEnabled;
 				token.createdAt = user.createdAt;
 				token.updatedAt = user.updatedAt;
 			}
@@ -73,6 +75,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				session.user.emailVerified = token.emailVerified as Date | null;
 				session.user.lastPasswordUpdate =
 					token.lastPasswordUpdate as Date | null;
+				session.user.twoFactorEnabled =
+					token.twoFactorEnabled as boolean;
 				session.user.createdAt = token.createdAt as Date;
 				session.user.updatedAt = token.updatedAt as Date;
 			}
