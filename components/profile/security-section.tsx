@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -10,12 +10,16 @@ import { Enable2FADialog } from "./dialogs/enable-2fa-dialog";
 import { Disable2FADialog } from "./dialogs/disable-2fa-dialog";
 import { UpdatePasswordDialog } from "./dialogs/update-password-dialog";
 
+interface SecuritySettings {
+	twoFactorEnabled: boolean;
+	lastPasswordUpdate: Date;
+}
+
 export default function SecuritySection() {
 	const { data: session } = useSession();
 
-	const [twoFactorEnabled, setTwoFactorEnabled] = useState(
-		session?.user?.twoFactorEnabled || false
-	);
+	const [securitySettings, setSecuritySettings] =
+		useState<SecuritySettings | null>(null);
 
 	const [enable2FADialogOpen, setEnable2FADialogOpen] = useState(false);
 	const [disable2FADialogOpen, setDisable2FADialogOpen] = useState(false);
@@ -33,6 +37,22 @@ export default function SecuritySection() {
 	const openUpdatePasswordDialog = () => {
 		setUpdatePasswordDialogOpen(true);
 	};
+
+	useEffect(() => {
+		const fetchSecuritySettings = async () => {
+			try {
+				const res = await fetch("/api/user/security-settings");
+				const data = await res.json();
+				setSecuritySettings(data);
+			} catch (error) {
+				console.error("Error fetching security settings:", error);
+			}
+		};
+
+		if (session?.user) {
+			fetchSecuritySettings();
+		}
+	}, [session?.user]);
 
 	return (
 		<section className="flex flex-col w-full space-y-4 lg:space-y-6">
@@ -66,10 +86,10 @@ export default function SecuritySection() {
 							</p>
 							<p className="text-[10px] sm:text-xs text-muted-foreground">
 								Your password was last updated{" "}
-								{session?.user?.lastPasswordUpdate
+								{securitySettings?.lastPasswordUpdate
 									? formatDistanceToNow(
 											new Date(
-												session?.user?.lastPasswordUpdate
+												securitySettings?.lastPasswordUpdate
 											)
 										)
 									: "never"}
@@ -90,7 +110,7 @@ export default function SecuritySection() {
 							Add an extra layer of security to your account.
 						</p>
 					</div>
-					{twoFactorEnabled ? (
+					{securitySettings?.twoFactorEnabled ? (
 						<Button
 							onClick={openDisable2FADialog}
 							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-background text-foreground border border-border hover:bg-foreground/5 hover:text-foreground/60 cursor-pointer"
@@ -109,7 +129,7 @@ export default function SecuritySection() {
 					)}
 				</div>
 
-				{twoFactorEnabled ? (
+				{securitySettings?.twoFactorEnabled ? (
 					<div className="bg-muted/30 rounded-xl p-3 sm:p-4 mt-4">
 						<div className="flex items-center space-x-3">
 							<div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-chart-3/20 flex items-center justify-center">

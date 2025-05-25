@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 		const hashedBackupCodes = hashBackupCodes(backupCodes);
 
 		// save backup codes to database
-		const updatedUser = await db.user.update({
+		await db.user.update({
 			where: { id: session.user.id },
 			data: {
 				twoFactorEnabled: true,
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
 				backupCodes: hashedBackupCodes,
 			},
 		});
+
 		console.log("user updated");
 
 		return NextResponse.json({ success: true });

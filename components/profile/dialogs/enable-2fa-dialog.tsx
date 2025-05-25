@@ -38,7 +38,7 @@ interface Enable2FADialogProps {
 }
 
 export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
-	const { data: session } = useSession();
+	const { data: session, update: updateSession } = useSession();
 
 	const [setupData, setSetupData] = useState<TwoFactorSetupData | null>(null);
 	const [showBackupCodes, setShowBackupCodes] = useState(false);
@@ -96,6 +96,15 @@ export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
 				toast.error(data.error);
 				throw new Error(data.error);
 			}
+
+			// Update session with twoFactorEnabled status
+			await updateSession({
+				...session,
+				user: {
+					...session?.user,
+					twoFactorEnabled: true,
+				},
+			});
 
 			// Close setup dialog and open complete dialog
 			onOpenChange(false);
