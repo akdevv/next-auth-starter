@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
+import { generateTwoFactorSessionToken } from "@/server/actions/2fa";
 
 declare module "next-auth" {
 	interface User {
@@ -82,12 +83,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			}
 			return session;
 		},
-		async signIn() {
+		async signIn({ user }) {
 			// If the user is not email verified, we still allow sign in
 			// But middleware will handle redirecting to verification page
+
+			// check if user had 2fa enabled
+			const dbUser = await db.user.findUnique({
+				where: { id: user.id },
+			});
+			if (dbUser?.twoFactorEnabled) {
+				const token = generateTwoFactorSessionToken();
+				const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+				if (!user.id) {
+					return false;
+				}
+
+				await db.twoFactorToken.create({
+					data: {
+						token,
+						userId: user.id,
+						expires,
+					},
+				});
+
+				return `/auth/2fa?token=${token}`;
+			}
+
 			return true;
 		},
 		async redirect({ url, baseUrl }) {
+			// Handle 2FA redirects
+			if (url.startsWith("/auth/2fa")) {
+				return `${baseUrl}${url}`;
+			}
+
 			// Allows relative callback URLs
 			if (url.startsWith("/")) return `${baseUrl}${url}`;
 			// Allows callback URLs on the same origin

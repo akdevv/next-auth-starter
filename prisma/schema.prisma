@@ -43,15 +43,13 @@ model User {
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   lastPasswordUpdate   DateTime?
+  backupCodes          String[]
+  twoFactorEnabled     Boolean               @default(false)
+  twoFactorSecret      String?
   accounts             Account[]
   sessions             Session[]
+  twoFactorTokens      TwoFactorToken[]
   verificationAttempts VerificationAttempt[]
-
-  // 2FA fields
-  twoFactorEnabled      Boolean                @default(false)
-  twoFactorSecret       String?                // Encrypted TOTP secret
-  backupCodes           String[]               // Array of backup codes (hashed)
-  twoFactorTokens       TwoFactorToken[]
 }
 
 model VerificationToken {
@@ -66,14 +64,14 @@ model VerificationToken {
 }
 
 model VerificationAttempt {
-  id            String   @id @default(cuid())
-  userId        String
-  email         String
-  timestamp     DateTime @default(now())
-  token         String?
-  type          String   @default("PASSWORD_RESET") // PASSWORD_RESET, EMAIL_VERIFICATION, etc.
-  success       Boolean  @default(false)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  timestamp DateTime @default(now())
+  token     String?
+  success   Boolean  @default(false)
+  type      String   @default("PASSWORD_RESET")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, timestamp])
   @@index([token])

@@ -23,12 +23,14 @@ export default async function middleware(req: NextRequest) {
 		"/auth/register",
 		"/auth/error",
 		"/auth/forgot-password",
+		"/auth/2fa",
 	];
 
 	// handle verification routes
 	const isDocsRoute = pathname.startsWith("/docs");
 	const isVerificationRoute = pathname.startsWith("/auth/verify-email");
 	const isForgotPasswordRoute = pathname.startsWith("/auth/forgot-password");
+	const isTwoFactorRoute = pathname.startsWith("/auth/2fa");
 
 	// if user is not authenticated
 	if (!token) {
@@ -36,7 +38,8 @@ export default async function middleware(req: NextRequest) {
 		if (
 			publicRoutes.includes(pathname) ||
 			isDocsRoute ||
-			isForgotPasswordRoute
+			isForgotPasswordRoute ||
+			isTwoFactorRoute
 		) {
 			return NextResponse.next();
 		}
