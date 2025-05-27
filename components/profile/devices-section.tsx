@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition, useTransition } from "react";
 import { SessionInfo } from "@/server/actions/session";
 import {
 	FiMonitor,
@@ -17,9 +17,19 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogoutSessionDialog } from "./dialogs/logout-session-dialgo";
 import LogoutAllDevicesDialog from "./dialogs/logout-all-devices-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -33,6 +43,11 @@ export default function DevicesSection() {
 	const [sessions, setSessions] = useState<SessionInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [revokingSessionId, setRevokingSessionId] = useState<string | null>(
+		null
+	);
+
+	const [isPending, startTransition] = useTransition();
 
 	const fetchSessions = async () => {
 		try {
@@ -106,6 +121,36 @@ export default function DevicesSection() {
 		if (diffInMinutes < 1440)
 			return `${Math.floor(diffInMinutes / 60)}h ago`;
 		return format(date, "MMM d, yyyy");
+	};
+
+	// Revoke specific session
+	const handleRevokeSession = async (sessionId: string) => {
+		setRevokingSessionId(sessionId);
+		startTransition(async () => {
+			try {
+				const res = await fetch(`/api/sessions/${sessionId}`, {
+					method: "DELETE",
+				});
+
+				const result = await res.json();
+
+				if (!res.ok) {
+					throw new Error(result.error || "Failed to revoke session");
+				}
+
+				toast.success("Session revoked successfully");
+				await fetchSessions(); // Refresh the list
+			} catch (error) {
+				console.error("Failed to revoke session:", error);
+				toast.error(
+					error instanceof Error
+						? error.message
+						: "Failed to revoke session"
+				);
+			} finally {
+				setRevokingSessionId(null);
+			}
+		});
 	};
 
 	const activeSessions = sessions.filter((session) => !session.isCurrent);
@@ -234,16 +279,53 @@ export default function DevicesSection() {
 									</TableCell>
 									<TableCell className="text-right">
 										{!session.isCurrent && (
-											<Button
-												onClick={() =>
-													setLogoutSessionDialogOpen(
-														true
-													)
+											<AlertDialog
+												open={logoutSessionDialogOpen}
+												onOpenChange={
+													setLogoutSessionDialogOpen
 												}
-												className="text-chart-4 bg-transparent hover:bg-transparent hover:underline hover:underline-offset-4 px-2 cursor-pointer"
 											>
-												Logout
-											</Button>
+												<AlertDialogTrigger asChild>
+													<Button
+														disabled={isPending}
+														className="text-chart-4 bg-transparent hover:bg-transparent hover:underline hover:underline-offset-4 px-2 cursor-pointer"
+													>
+														{revokingSessionId ===
+														session.id ? (
+															<FiLoader className="h-4 w-4 animate-spin" />
+														) : (
+															"Logout"
+														)}
+													</Button>
+												</AlertDialogTrigger>
+
+												<AlertDialogContent>
+													<AlertDialogHeader>
+														<AlertDialogTitle>
+															Logout
+														</AlertDialogTitle>
+														<AlertDialogDescription>
+															Are you sure you
+															want to logout?
+														</AlertDialogDescription>
+													</AlertDialogHeader>
+													<AlertDialogFooter>
+														<AlertDialogCancel className="hover:text-foreground/80 transition-all duration-300 cursor-pointer">
+															Cancel
+														</AlertDialogCancel>
+														<AlertDialogAction
+															onClick={() =>
+																handleRevokeSession(
+																	session.id
+																)
+															}
+															className="cursor-pointer"
+														>
+															Logout
+														</AlertDialogAction>
+													</AlertDialogFooter>
+												</AlertDialogContent>
+											</AlertDialog>
 										)}
 									</TableCell>
 								</TableRow>
@@ -257,10 +339,10 @@ export default function DevicesSection() {
 				open={logoutAllDevicesDialogOpen}
 				onOpenChange={setLogoutAllDevicesDialogOpen}
 			/>
-			<LogoutSessionDialog
+			{/* <LogoutSessionDialog
 				open={logoutSessionDialogOpen}
 				onOpenChange={setLogoutSessionDialogOpen}
-			/>
+			/> */}
 		</div>
 	);
 }
