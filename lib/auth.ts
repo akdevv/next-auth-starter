@@ -14,6 +14,10 @@ declare module "next-auth" {
 		createdAt: Date;
 		updatedAt: Date;
 	}
+
+	interface Session {
+		sessionToken?: string;
+	}
 }
 
 const checkPassword = async (password: string, hashedPassword: string) => {
@@ -84,6 +88,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			return session;
 		},
 		async signIn({ user }) {
+			console.log("User signed in:", user.email);
+
 			// If the user is not email verified, we still allow sign in
 			// But middleware will handle redirecting to verification page
 

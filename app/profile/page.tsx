@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+
 import Navbar from "@/components/shared/navbar";
 import Footer from "@/components/shared/footer";
 import Sidebar from "@/components/profile/sidebar";
 import ProfileSection from "@/components/profile/profile-section";
 import SecuritySection from "@/components/profile/security-section";
-import DevicesSection from "@/components/profile/devices-section";
-import { useSearchParams, useRouter } from "next/navigation";
+import DevicesSectionWrapper from "@/components/profile/devices-section-wrapper";
 
 export default function Profile() {
 	const router = useRouter();
@@ -40,7 +41,7 @@ export default function Profile() {
 				<div className="flex border border-border rounded-lg p-4 lg:p-8 w-full max-w-4xl h-fit">
 					{activeSection === "profile" && <ProfileSection />}
 					{activeSection === "security" && <SecuritySection />}
-					{activeSection === "devices" && <DevicesSection />}
+					{activeSection === "devices" && <DevicesSectionWrapper />}
 				</div>
 			</main>
 			<Footer />
