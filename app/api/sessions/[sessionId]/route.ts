@@ -50,20 +50,46 @@ export async function DELETE({ params }: { params: { sessionId: string } }) {
 			);
 		}
 
-		// Delete the session (this effectively expires the token)
+		// Delete the session
 		await db.session.delete({
 			where: {
 				id: sessionId,
 			},
 		});
 
+		// Clear the session cookie
+		try {
+			await fetch("/api/auth/clear-session-cookie", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					sessionToken: sessionToRevoke.sessionToken,
+				}),
+			});
+		} catch (error) {
+			console.error("Failed to clear session cookie:", error);
+		}
+
 		// Invalidate cache
 		revalidateTag("sessions");
 
-		return NextResponse.json({
+		const res = NextResponse.json({
 			success: true,
 			message: "Session revoked successfully",
 		});
+
+		// also clear cookie from response
+		res.cookies.set("authjs.session-token", "", {
+			expires: new Date(0),
+			path: "/",
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+		});
+
+		return res;
 	} catch (error) {
 		console.error("Failed to revoke session:", error);
 		return NextResponse.json(
