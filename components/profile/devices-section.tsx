@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, startTransition, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { SessionInfo } from "@/server/actions/session";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+
 import {
 	FiMonitor,
 	FiTablet,
@@ -30,12 +33,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import LogoutAllDevicesDialog from "./dialogs/logout-all-devices-dialog";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { IoMdRefresh } from "react-icons/io";
 
 export default function DevicesSection() {
+	const router = useRouter();
+
 	const [logoutSessionDialogOpen, setLogoutSessionDialogOpen] =
 		useState(false);
 	const [logoutAllDevicesDialogOpen, setLogoutAllDevicesDialogOpen] =
@@ -123,6 +126,24 @@ export default function DevicesSection() {
 		return format(date, "MMM d, yyyy");
 	};
 
+	const clearSessionCookie = () => {
+		console.log("clearing session cookie");
+
+		const hostname = window.location.hostname;
+		const cookieOptions = [
+			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`,
+			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`,
+			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`,
+			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`,
+			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`,
+			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`,
+		];
+
+		cookieOptions.forEach((cookie) => {
+			document.cookie = cookie;
+		});
+	};
+
 	// Revoke specific session
 	const handleRevokeSession = async (sessionId: string) => {
 		setRevokingSessionId(sessionId);
@@ -163,6 +184,7 @@ export default function DevicesSection() {
 				});
 
 				const result = await res.json();
+				console.log(result);
 
 				if (!res.ok) {
 					throw new Error(
@@ -173,7 +195,10 @@ export default function DevicesSection() {
 				toast.success(
 					result.message || "All other sessions revoked successfully"
 				);
-				await fetchSessions(); // Refresh the list
+
+				clearSessionCookie();
+
+				router.refresh();
 			} catch (error) {
 				console.error("Failed to revoke all sessions:", error);
 				toast.error(
