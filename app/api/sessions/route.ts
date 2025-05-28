@@ -38,7 +38,7 @@ const getCachedUserSessions = unstable_cache(
 	},
 	["user-sessions"],
 	{
-		revalidate: 60, // Cache for 1 minute
+		revalidate: 1, // Cache for 1 sec
 		tags: ["sessions"],
 	}
 );

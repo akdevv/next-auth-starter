@@ -75,6 +75,7 @@ export default function Login() {
 					toast.error(errorMessage);
 				}
 			} else {
+				await updateSessionInfo();
 				router.push(callbackUrl);
 			}
 		} catch (err) {
@@ -89,6 +90,7 @@ export default function Login() {
 
 	const handleGoogleLogin = async () => {
 		await signIn("google", { callbackUrl });
+		await updateSessionInfo();
 	};
 
 	return (

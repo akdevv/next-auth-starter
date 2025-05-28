@@ -153,6 +153,38 @@ export default function DevicesSection() {
 		});
 	};
 
+	// Revoke all other sessions
+	const handleLogoutAllDevices = async () => {
+		console.log("trying to logout all devices");
+		startTransition(async () => {
+			try {
+				const res = await fetch("/api/sessions/revoke-all", {
+					method: "POST",
+				});
+
+				const result = await res.json();
+
+				if (!res.ok) {
+					throw new Error(
+						result.error || "Failed to revoke sessions"
+					);
+				}
+
+				toast.success(
+					result.message || "All other sessions revoked successfully"
+				);
+				await fetchSessions(); // Refresh the list
+			} catch (error) {
+				console.error("Failed to revoke all sessions:", error);
+				toast.error(
+					error instanceof Error
+						? error.message
+						: "Failed to revoke sessions"
+				);
+			}
+		});
+	};
+
 	const activeSessions = sessions.filter((session) => !session.isCurrent);
 	const currentSession = sessions.find((session) => session.isCurrent);
 
@@ -207,12 +239,45 @@ export default function DevicesSection() {
 							<IoMdRefresh className="h-4 w-4" />
 						)}
 					</Button>
-					<Button
-						onClick={() => setLogoutAllDevicesDialogOpen(true)}
-						className="text-chart-4 bg-background border border-chart-4/20 hover:text-chart-4/80 hover:bg-chart-4/10 cursor-pointer"
+					<AlertDialog
+						open={logoutAllDevicesDialogOpen}
+						onOpenChange={setLogoutAllDevicesDialogOpen}
 					>
-						Logout of all devices
-					</Button>
+						<AlertDialogTrigger asChild>
+							<Button
+								disabled={isPending}
+								className="text-chart-4 bg-background border border-chart-4/20 hover:text-chart-4/80 hover:bg-chart-4/10 cursor-pointer"
+							>
+								{isPending ? (
+									<FiLoader className="h-4 w-4 animate-spin" />
+								) : (
+									"Logout of all devices"
+								)}
+							</Button>
+						</AlertDialogTrigger>
+
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>
+									Logout of all devices
+								</AlertDialogTitle>
+							</AlertDialogHeader>
+							<AlertDialogDescription>
+								Are you sure you want to logout of all devices?
+							</AlertDialogDescription>
+							<AlertDialogFooter>
+								<AlertDialogCancel className="hover:text-foreground/80 transition-all duration-300 cursor-pointer">
+									Cancel
+								</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={handleLogoutAllDevices}
+									className="bg-chart-4 text-white hover:bg-chart-4/80 cursor-pointer"
+								>
+									Logout
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</div>
 			</div>
 			<div className="rounded-xl border bg-background">
@@ -334,15 +399,6 @@ export default function DevicesSection() {
 					</TableBody>
 				</Table>
 			</div>
-
-			<LogoutAllDevicesDialog
-				open={logoutAllDevicesDialogOpen}
-				onOpenChange={setLogoutAllDevicesDialogOpen}
-			/>
-			{/* <LogoutSessionDialog
-				open={logoutSessionDialogOpen}
-				onOpenChange={setLogoutSessionDialogOpen}
-			/> */}
 		</div>
 	);
 }

@@ -3,7 +3,10 @@ import { db } from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
-export async function DELETE({ params }: { params: { sessionId: string } }) {
+export async function DELETE(
+	req: Request,
+	{ params }: { params: { sessionId: string } }
+) {
 	try {
 		const session = await auth();
 		if (!session?.user?.id) {
@@ -68,8 +71,8 @@ export async function DELETE({ params }: { params: { sessionId: string } }) {
 					sessionToken: sessionToRevoke.sessionToken,
 				}),
 			});
-		} catch (error) {
-			console.error("Failed to clear session cookie:", error);
+		} catch (cookieError) {
+			console.error("Failed to clear session cookie:", cookieError);
 		}
 
 		// Invalidate cache
