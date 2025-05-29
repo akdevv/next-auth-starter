@@ -13,74 +13,73 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		// Get all active sessions to revoke
-		const sessionsToRevoke = await db.session.findMany({
+		// Get current session to preserve it
+		const currentSession = await db.session.findFirst({
 			where: {
 				userId: session.user.id,
 				expires: { gt: new Date() },
 			},
+			orderBy: { lastActive: "desc" },
 		});
 
-		if (sessionsToRevoke.length === 0) {
+		if (!currentSession) {
 			return NextResponse.json(
 				{
-					error: "No active sessions found",
+					error: "No current session found",
 				},
 				{ status: 400 }
 			);
 		}
 
-		// delete the session
-		const deleteResult = await db.session.deleteMany({
+		// STEP 1: Mark all other sessions as revoked
+		const revokeResult = await db.session.updateMany({
 			where: {
 				userId: session.user.id,
+				id: {
+					not: currentSession.id,
+				},
+				isRevoked: false, // Only revoke sessions that aren't already revoked
+			},
+			data: {
+				isRevoked: true,
+				revokedAt: new Date(),
+				revokedBy: currentSession.id,
+				expires: new Date(Date.now() - 1000), // Also expire them
 			},
 		});
 
-		// Clear session cookies for all sessions
-		for (const sessionToRevoke of sessionsToRevoke) {
+		console.log(
+			`Marked ${revokeResult.count} sessions as revoked for user ${session.user.id}`
+		);
+
+		// STEP 2: Schedule cleanup (delete revoked sessions after 60 seconds)
+		setTimeout(async () => {
 			try {
-				await fetch(
-					new URL("/api/auth/clear-session-cookie", req.url),
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
+				const cleanupResult = await db.session.deleteMany({
+					where: {
+						userId: session?.user?.id ?? "",
+						isRevoked: true,
+						revokedAt: {
+							lt: new Date(Date.now() - 30000), // Delete sessions revoked more than 30 seconds ago
 						},
-						body: JSON.stringify({
-							sessionToken: sessionToRevoke.sessionToken,
-						}),
-					}
+					},
+				});
+				console.log(
+					`Cleaned up ${cleanupResult.count} revoked sessions`
 				);
-			} catch (cookieError) {
-				console.error("Failed to clear session cookie:", cookieError);
+			} catch (error) {
+				console.error("Failed to cleanup revoked sessions:", error);
 			}
-		}
+		}, 60000); // 60 seconds delay
 
 		// Invalidate cache
 		revalidateTag("sessions");
 
-		console.log(
-			`Expired, cleared cookies, and revoked ${deleteResult.count} sessions for user ${session.user.id}`
-		);
-
-		// Create response that also clears cookies
-		const res = NextResponse.json({
+		return NextResponse.json({
 			success: true,
-			revokedCount: deleteResult.count,
-			message: `Successfully signed out of all devices`,
+			revokedCount: revokeResult.count,
+			message: `Successfully signed out of ${revokeResult.count} other device${revokeResult.count !== 1 ? "s" : ""}.`,
 		});
-
-		// Clear session cookie from response headers
-		res.cookies.set("authjs.session-token", "", {
-			expires: new Date(0),
-			path: "/",
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-		});
-
-		return res;
 	} catch (error) {
 		console.error("Failed to revoke all sessions:", error);
 		return NextResponse.json(

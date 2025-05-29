@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
@@ -34,7 +34,6 @@ export default function VerifyEmailPage({
 	const [error, setError] = useState<string | null>(null);
 	const { data: session, status } = useSession();
 	// const { data: session, status, update } = useSession();
-
 
 	// timer for countdown
 	useEffect(() => {
@@ -82,6 +81,20 @@ export default function VerifyEmailPage({
 				}
 				setError(data.error || "An error occurred");
 				throw new Error(data.error || "An error occurred");
+			}
+
+			// After successful verification, sign in the user
+			const signInResult = await signIn("credentials", {
+				email: session?.user?.email,
+				redirect: false,
+			});
+
+			if (signInResult?.error) {
+				toast.error(
+					"Email verified but failed to sign in. Please try logging in."
+				);
+				router.push("/auth/login");
+				return;
 			}
 
 			toast.success("Email verified successfully!");

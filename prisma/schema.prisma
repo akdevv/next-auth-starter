@@ -26,17 +26,20 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
+  id           String    @id @default(cuid())
+  sessionToken String    @unique
   userId       String
   expires      DateTime
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   deviceName   String?
   ipAddress    String?
-  lastActive   DateTime @default(now())
+  lastActive   DateTime  @default(now())
   location     String?
   userAgent    String?
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRevoked    Boolean   @default(false)
+  revokedAt    DateTime?
+  revokedBy    String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([sessionToken])
