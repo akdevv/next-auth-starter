@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { SessionInfo } from "@/server/actions/session";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
+import { SessionInfo } from "@/server/actions/session";
+import { useState, useEffect, useTransition } from "react";
 
 import {
 	FiMonitor,
@@ -31,9 +31,9 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { IoMdRefresh } from "react-icons/io";
 
 export default function DevicesSection() {
@@ -49,6 +49,8 @@ export default function DevicesSection() {
 	const [revokingSessionId, setRevokingSessionId] = useState<string | null>(
 		null
 	);
+	const [pollingInterval, setPollingInterval] =
+		useState<NodeJS.Timeout | null>(null);
 
 	const [isPending, startTransition] = useTransition();
 
@@ -144,6 +146,49 @@ export default function DevicesSection() {
 		});
 	};
 
+	const checkSessionValidity = async () => {
+		try {
+			const response = await fetch("/api/sessions/check", {
+				cache: "no-store",
+			});
+
+			if (!response.ok) {
+				// Session is invalid, clear cookies and stop polling
+				clearSessionCookie();
+				if (pollingInterval) {
+					clearInterval(pollingInterval);
+					setPollingInterval(null);
+				}
+				router.refresh();
+				return false;
+			}
+			return true;
+		} catch (error) {
+			console.error("Failed to check session validity:", error);
+			return false;
+		}
+	};
+
+	const startPolling = () => {
+		// Clear any existing interval
+		if (pollingInterval) {
+			clearInterval(pollingInterval);
+		}
+
+		// Start new polling interval
+		const interval = setInterval(checkSessionValidity, 30000); // 30 seconds
+		setPollingInterval(interval);
+	};
+
+	// Cleanup polling on component unmount
+	useEffect(() => {
+		return () => {
+			if (pollingInterval) {
+				clearInterval(pollingInterval);
+			}
+		};
+	}, [pollingInterval]);
+
 	// Revoke specific session
 	const handleRevokeSession = async (sessionId: string) => {
 		setRevokingSessionId(sessionId);
@@ -161,6 +206,9 @@ export default function DevicesSection() {
 
 				toast.success("Session revoked successfully");
 				await fetchSessions(); // Refresh the list
+
+				// Start polling after revoking a session
+				startPolling();
 			} catch (error) {
 				console.error("Failed to revoke session:", error);
 				toast.error(
@@ -195,6 +243,9 @@ export default function DevicesSection() {
 				toast.success(
 					result.message || "All other sessions revoked successfully"
 				);
+
+				// Start polling after revoking all sessions
+				startPolling();
 
 				clearSessionCookie();
 
@@ -243,8 +294,8 @@ export default function DevicesSection() {
 	}
 
 	return (
-		<div className="bg-muted/40 rounded-xl p-6 w-full">
-			<div className="flex items-center justify-between mb-6">
+		<div className="bg-muted/40 rounded-xl p-4 sm:p-6 w-full">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
 				<div>
 					<h2 className="text-xl font-bold">Active sessions</h2>
 					<p className="text-muted-foreground text-sm">
@@ -271,7 +322,7 @@ export default function DevicesSection() {
 						<AlertDialogTrigger asChild>
 							<Button
 								disabled={isPending}
-								className="text-chart-4 bg-background border border-chart-4/20 hover:text-chart-4/80 hover:bg-chart-4/10 cursor-pointer"
+								className="text-chart-4 bg-background border border-chart-4/20 hover:text-chart-4/80 hover:bg-chart-4/10 cursor-pointer text-sm sm:text-base"
 							>
 								{isPending ? (
 									<FiLoader className="h-4 w-4 animate-spin" />
@@ -281,7 +332,7 @@ export default function DevicesSection() {
 							</Button>
 						</AlertDialogTrigger>
 
-						<AlertDialogContent>
+						<AlertDialogContent className="max-w-[90vw] sm:max-w-md">
 							<AlertDialogHeader>
 								<AlertDialogTitle>
 									Logout of all devices
@@ -305,13 +356,17 @@ export default function DevicesSection() {
 					</AlertDialog>
 				</div>
 			</div>
-			<div className="rounded-xl border bg-background">
+			<div className="rounded-xl border bg-background overflow-x-auto">
 				<Table>
 					<TableHeader>
 						<TableRow>
 							<TableHead className="pl-3">Device</TableHead>
-							<TableHead>Location</TableHead>
-							<TableHead>Last Active</TableHead>
+							<TableHead className="hidden sm:table-cell">
+								Location
+							</TableHead>
+							<TableHead className="hidden sm:table-cell">
+								Last Active
+							</TableHead>
 							<TableHead className="text-right pr-3">
 								Action
 							</TableHead>
@@ -341,6 +396,17 @@ export default function DevicesSection() {
 													{session.deviceName}
 												</span>
 											</div>
+											<div className="flex flex-col sm:hidden text-xs text-muted-foreground">
+												<span>
+													{session.location ||
+														"Unknown"}
+												</span>
+												<span>
+													{formatLastActive(
+														session.lastActive
+													)}
+												</span>
+											</div>
 											<span className="text-xs text-muted-foreground">
 												{currentSession?.location && (
 													<span className="flex items-center gap-1">
@@ -361,10 +427,10 @@ export default function DevicesSection() {
 											)}
 										</div>
 									</TableCell>
-									<TableCell>
+									<TableCell className="hidden sm:table-cell">
 										{session.location || "Unknown"}
 									</TableCell>
-									<TableCell>
+									<TableCell className="hidden sm:table-cell">
 										{formatLastActive(session.lastActive)}
 									</TableCell>
 									<TableCell className="text-right">
@@ -389,7 +455,7 @@ export default function DevicesSection() {
 													</Button>
 												</AlertDialogTrigger>
 
-												<AlertDialogContent>
+												<AlertDialogContent className="max-w-[90vw] sm:max-w-md">
 													<AlertDialogHeader>
 														<AlertDialogTitle>
 															Logout
