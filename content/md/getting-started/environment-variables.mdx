@@ -1,0 +1,140 @@
+---
+title: 'Environment Variables Guide'
+description: 'Complete guide to configuring environment variables for the Next.js Authentication Starter project'
+---
+
+# Environment Variables Guide
+
+## Required Variables
+
+### Database Configuration
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+```
+- Required for database connection
+- Format depends on your database provider
+- Never commit this to version control
+
+### Authentication
+```env
+NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+```
+- `NEXTAUTH_SECRET`: Used to encrypt tokens and cookies
+- `NEXTAUTH_URL`: Your application's base URL
+
+### Email Service
+```env
+RESEND_API_KEY="re_123..."
+```
+- Required for sending emails
+- Get your API key from [Resend](https://resend.com)
+
+## Optional Variables
+
+### Google OAuth
+```env
+GOOGLE_CLIENT_ID="your-client-id"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+```
+- Required only if using Google authentication
+- Get these from Google Cloud Console
+
+### GitHub OAuth
+```env
+GITHUB_ID="your-github-client-id"
+GITHUB_SECRET="your-github-client-secret"
+```
+- Required only if using GitHub authentication
+- Get these from GitHub Developer Settings
+
+### Rate Limiting
+```env
+RATE_LIMIT_MAX=100
+RATE_LIMIT_WINDOW_MS=900000
+```
+- Optional rate limiting configuration
+- Default: 100 requests per 15 minutes
+
+## Development vs Production
+
+### Development
+```env
+NODE_ENV="development"
+```
+- Enables development features
+- Shows detailed error messages
+- Disables caching
+
+### Production
+```env
+NODE_ENV="production"
+```
+- Optimizes for performance
+- Minimizes error details
+- Enables caching
+
+## Security Best Practices
+
+1. **Never Commit .env Files**
+   - Add `.env` to `.gitignore`
+   - Use `.env.example` for reference
+   - Keep secrets secure
+
+2. **Use Strong Secrets**
+   - Generate strong random strings
+   - Use different secrets per environment
+   - Rotate secrets periodically
+
+3. **Environment Separation**
+   - Use different values for dev/prod
+   - Never use production values in development
+   - Keep production secrets secure
+
+## Setting Up Environment Variables
+
+1. **Create .env File**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Fill in Values**
+   - Copy values from your service providers
+   - Generate secure secrets
+   - Test configuration
+
+3. **Verify Setup**
+   ```bash
+   bun dev
+   ```
+   - Check for missing variables
+   - Verify connections
+   - Test functionality
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Missing Variables**
+   - Check `.env` file exists
+   - Verify all required variables
+   - Check for typos
+
+2. **Invalid Values**
+   - Verify format of URLs
+   - Check API key validity
+   - Test database connection
+
+3. **Environment Mismatch**
+   - Check `NODE_ENV` setting
+   - Verify environment-specific values
+   - Test in correct environment
+
+## Next Steps
+
+1. Set up your database
+2. Configure authentication providers
+3. Test email functionality
+4. Deploy to production
+
+For more detailed information about specific features, refer to the relevant sections in this documentation. 

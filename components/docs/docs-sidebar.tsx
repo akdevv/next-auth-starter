@@ -55,14 +55,14 @@ export function DocsSidebar({ isOpen, className }: DocsSidebarProps) {
 			{/* Sidebar */}
 			<aside
 				className={cn(
-					"fixed md:sticky top-0 left-0 z-30 w-64 h-[calc(100vh-10rem)] transform bg-background border-r transition-transform duration-300 ease-in-out",
+					"fixed md:sticky top-0 left-0 z-30 w-64 h-full transform bg-background border-r transition-transform duration-300 ease-in-out",
 					isOpen
 						? "translate-x-0"
 						: "-translate-x-full md:translate-x-0",
 					className
 				)}
 			>
-				<div className="flex flex-col h-full">
+				<div className="flex flex-col h-[calc(100vh-3rem)] mt-18">
 					<div className="px-4 py-4 border-b">
 						<h2 className="text-lg font-semibold">Documentation</h2>
 					</div>

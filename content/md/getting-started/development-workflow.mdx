@@ -1,0 +1,215 @@
+---
+title: 'Development Workflow'
+description: 'Learn about the development workflow and best practices for the Next.js Authentication Starter project'
+---
+
+# Development Workflow
+
+## Getting Started
+
+### 1. Clone and Setup
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/next-auth-starter.git
+
+# Navigate to project directory
+cd next-auth-starter
+
+# Install dependencies
+bun install
+
+# Set up environment variables
+cp .env.example .env
+```
+
+### 2. Start Development Server
+```bash
+# Start the development server
+bun dev
+```
+
+## Development Process
+
+### 1. Branch Management
+```bash
+# Create a new feature branch
+git checkout -b feature/your-feature-name
+
+# Create a new bugfix branch
+git checkout -b fix/your-bug-fix
+```
+
+### 2. Making Changes
+1. **Code Changes**
+   - Follow TypeScript best practices
+   - Write clean, maintainable code
+   - Add comments where necessary
+   - Follow the project's code style
+
+2. **Testing**
+   ```bash
+   # Run tests
+   bun test
+
+   # Run tests in watch mode
+   bun test --watch
+   ```
+
+3. **Linting**
+   ```bash
+   # Run linter
+   bun lint
+
+   # Fix linting issues
+   bun lint --fix
+   ```
+
+### 3. Committing Changes
+```bash
+# Stage changes
+git add .
+
+# Create commit
+git commit -m "feat: add new feature"
+```
+
+## Code Review Process
+
+### 1. Pull Request Creation
+1. Push your branch
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+2. Create Pull Request
+   - Use the PR template
+   - Add detailed description
+   - Link related issues
+   - Request reviewers
+
+### 2. Code Review Guidelines
+- Review code style
+- Check for security issues
+- Verify functionality
+- Ensure tests are present
+- Check documentation
+
+## Testing Strategy
+
+### 1. Unit Tests
+```typescript
+// Example test
+describe('Component', () => {
+  it('should render correctly', () => {
+    // Test implementation
+  });
+});
+```
+
+### 2. Integration Tests
+```typescript
+// Example integration test
+describe('API', () => {
+  it('should handle requests correctly', async () => {
+    // Test implementation
+  });
+});
+```
+
+### 3. E2E Tests
+```typescript
+// Example E2E test
+describe('User Flow', () => {
+  it('should complete the authentication flow', async () => {
+    // Test implementation
+  });
+});
+```
+
+## Deployment Process
+
+### 1. Staging Deployment
+```bash
+# Deploy to staging
+bun run deploy:staging
+```
+
+### 2. Production Deployment
+```bash
+# Deploy to production
+bun run deploy:prod
+```
+
+## Best Practices
+
+### 1. Code Quality
+- Write clean, maintainable code
+- Follow TypeScript best practices
+- Use proper error handling
+- Add appropriate comments
+
+### 2. Testing
+- Write tests for new features
+- Maintain test coverage
+- Test edge cases
+- Use proper test descriptions
+
+### 3. Documentation
+- Update documentation
+- Add code comments
+- Document API changes
+- Keep README up to date
+
+### 4. Security
+- Follow security best practices
+- Handle sensitive data properly
+- Use secure authentication
+- Implement proper validation
+
+## Common Tasks
+
+### 1. Adding New Features
+1. Create feature branch
+2. Implement feature
+3. Write tests
+4. Update documentation
+5. Create PR
+
+### 2. Fixing Bugs
+1. Create bugfix branch
+2. Reproduce issue
+3. Fix bug
+4. Add tests
+5. Create PR
+
+### 3. Updating Dependencies
+```bash
+# Update dependencies
+bun update
+
+# Check for security issues
+bun audit
+```
+
+## Troubleshooting
+
+### 1. Common Issues
+- Build errors
+- Test failures
+- Linting errors
+- Deployment issues
+
+### 2. Solutions
+- Check error messages
+- Review logs
+- Verify configurations
+- Test locally
+
+## Next Steps
+
+1. Review the project structure
+2. Set up your environment
+3. Start development
+4. Follow the workflow
+
+For more detailed information about specific features, refer to the relevant sections in this documentation. 

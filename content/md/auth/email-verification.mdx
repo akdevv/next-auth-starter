@@ -1,0 +1,320 @@
+---
+title: 'Email Verification System'
+description: 'Learn how to implement and configure email verification in your Next.js application'
+---
+
+# Email Verification System
+
+## Overview
+
+Email verification ensures that users provide valid email addresses and helps maintain the integrity of your user base. This guide covers implementation using Resend for email delivery.
+
+## Implementation
+
+### 1. Database Schema
+
+```prisma
+// prisma/schema.prisma
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  verificationToken String?   @unique
+  verificationSentAt DateTime?
+}
+```
+
+### 2. Email Service Setup
+
+```typescript
+// lib/email.ts
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function sendVerificationEmail(
+  email: string,
+  token: string
+) {
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+  
+  await resend.emails.send({
+    from: "noreply@yourdomain.com",
+    to: email,
+    subject: "Verify your email address",
+    html: `
+      <h1>Verify your email address</h1>
+      <p>Click the link below to verify your email address:</p>
+      <a href="${verificationUrl}">Verify Email</a>
+      <p>This link will expire in 24 hours.</p>
+    `,
+  });
+}
+```
+
+### 3. Generate Verification Token
+
+```typescript
+// lib/verification.ts
+import { randomBytes } from "crypto";
+import { prisma } from "@/lib/prisma";
+
+export async function generateVerificationToken(userId: string) {
+  const token = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verificationToken: token,
+      verificationSentAt: new Date(),
+    },
+  });
+  
+  return token;
+}
+```
+
+### 4. Verify Email
+
+```typescript
+// lib/verification.ts
+export async function verifyEmail(token: string) {
+  const user = await prisma.user.findUnique({
+    where: { verificationToken: token },
+  });
+  
+  if (!user) {
+    throw new Error("Invalid verification token");
+  }
+  
+  const tokenAge = Date.now() - user.verificationSentAt!.getTime();
+  if (tokenAge > 24 * 60 * 60 * 1000) {
+    throw new Error("Verification token expired");
+  }
+  
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: new Date(),
+      verificationToken: null,
+      verificationSentAt: null,
+    },
+  });
+  
+  return true;
+}
+```
+
+## API Routes
+
+### 1. Send Verification Email
+
+```typescript
+// app/api/auth/verify-email/route.ts
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { generateVerificationToken } from "@/lib/verification";
+import { sendVerificationEmail } from "@/lib/email";
+
+export async function POST() {
+  const session = await getServerSession();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    const token = await generateVerificationToken(session.user.id);
+    await sendVerificationEmail(session.user.email!, token);
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to send verification email" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 2. Verify Email Token
+
+```typescript
+// app/api/auth/verify-email/[token]/route.ts
+import { NextResponse } from "next/server";
+import { verifyEmail } from "@/lib/verification";
+
+export async function GET(
+  request: Request,
+  { params }: { params: { token: string } }
+) {
+  try {
+    await verifyEmail(params.token);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Invalid or expired token" },
+      { status: 400 }
+    );
+  }
+}
+```
+
+## UI Components
+
+### 1. Verification Form
+
+```typescript
+// components/auth/email-verification-form.tsx
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export function EmailVerificationForm() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const router = useRouter();
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      
+      if (response.ok) {
+        setSuccess(true);
+      } else {
+        const data = await response.json();
+        setError(data.error);
+      }
+    } catch (error) {
+      setError("An error occurred");
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="error">{error}</div>}
+      {success && (
+        <div className="success">
+          Verification email sent! Please check your inbox.
+        </div>
+      )}
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        required
+      />
+      <button type="submit">Send Verification Email</button>
+    </form>
+  );
+}
+```
+
+### 2. Verification Page
+
+```typescript
+// app/verify-email/page.tsx
+import { EmailVerificationForm } from "@/components/auth/email-verification-form";
+
+export default function VerifyEmailPage() {
+  return (
+    <div>
+      <h1>Verify Your Email</h1>
+      <p>Enter your email address to receive a verification link.</p>
+      <EmailVerificationForm />
+    </div>
+  );
+}
+```
+
+## Email Templates
+
+### 1. HTML Template
+
+```typescript
+// emails/verification-email.tsx
+export function VerificationEmail({ url }: { url: string }) {
+  return (
+    <div>
+      <h1>Verify your email address</h1>
+      <p>Click the link below to verify your email address:</p>
+      <a href={url}>Verify Email</a>
+      <p>This link will expire in 24 hours.</p>
+      <p>
+        If you didn't request this email, you can safely ignore it.
+      </p>
+    </div>
+  );
+}
+```
+
+### 2. Text Template
+
+```typescript
+// emails/verification-email-text.ts
+export function VerificationEmailText({ url }: { url: string }) {
+  return `
+    Verify your email address
+    
+    Click the link below to verify your email address:
+    ${url}
+    
+    This link will expire in 24 hours.
+    
+    If you didn't request this email, you can safely ignore it.
+  `;
+}
+```
+
+## Security Considerations
+
+1. **Token Security**
+   - Use cryptographically secure tokens
+   - Implement token expiration
+   - One-time use tokens
+
+2. **Rate Limiting**
+   - Limit verification attempts
+   - Implement cooldown periods
+   - Monitor for abuse
+
+3. **Email Security**
+   - Use secure email service
+   - Implement SPF/DKIM
+   - Monitor delivery rates
+
+## Best Practices
+
+1. **User Experience**
+   - Clear instructions
+   - Helpful error messages
+   - Easy resend process
+
+2. **Security**
+   - Strong validation
+   - Secure token generation
+   - Regular audits
+
+3. **Maintenance**
+   - Monitor email delivery
+   - Track verification rates
+   - Handle bounces
+
+## Next Steps
+
+1. Implement password reset
+2. Add email templates
+3. Enhance security features
+4. Improve user experience
+
+For more detailed information about specific features, refer to the relevant sections in this documentation. 

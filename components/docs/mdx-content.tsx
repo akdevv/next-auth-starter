@@ -5,8 +5,11 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import { useState } from "react";
-import { FaCheck } from "react-icons/fa";
+import { FaCheck, FaRegFile } from "react-icons/fa";
+import { BiLogoTypescript } from "react-icons/bi";
 import { LuCopy } from "react-icons/lu";
+import { VscJson } from "react-icons/vsc";
+import { SiPrisma } from "react-icons/si";
 
 import "highlight.js/styles/atom-one-dark.css";
 
@@ -26,6 +29,99 @@ const options = {
 			],
 		],
 	},
+};
+
+type CodeBlockType = {
+	headerIcon: React.ReactNode | null;
+	headerLabel: React.ReactNode | null;
+	isTerminal?: boolean;
+};
+
+const getCodeBlockType = (match: RegExpExecArray | null): CodeBlockType => {
+	if (!match) return { headerIcon: null, headerLabel: null };
+
+	const language = match[1];
+	let result: CodeBlockType = { headerIcon: null, headerLabel: null };
+
+	switch (language) {
+		case "env":
+			result = {
+				headerIcon: (
+					<span className="mr-2">
+						<FaRegFile />
+					</span>
+				),
+				headerLabel: (
+					<span className="text-sm font-semibold text-foreground">
+						.env
+					</span>
+				),
+			};
+			break;
+		case "shell":
+		case "bash":
+		case "sh":
+		case "zsh":
+		case "terminal":
+			result = {
+				headerIcon: (
+					<span className="text-sm font-medium text-muted-foreground mr-2">
+						&gt;_
+					</span>
+				),
+				headerLabel: (
+					<span className="text-sm font-semibold text-foreground">
+						Terminal
+					</span>
+				),
+				isTerminal: true,
+			};
+			break;
+		case "json":
+			result = {
+				headerIcon: (
+					<span className="mr-2">
+						<VscJson />
+					</span>
+				),
+				headerLabel: (
+					<span className="text-sm font-semibold text-foreground">
+						JSON
+					</span>
+				),
+			};
+			break;
+		case "typescript":
+			result = {
+				headerIcon: (
+					<span className="mr-2">
+						<BiLogoTypescript />
+					</span>
+				),
+				headerLabel: (
+					<span className="text-sm font-semibold text-foreground">
+						TypeScript
+					</span>
+				),
+			};
+			break;
+		case "prisma":
+			result = {
+				headerIcon: (
+					<span className="mr-2">
+						<SiPrisma />
+					</span>
+				),
+				headerLabel: (
+					<span className="text-sm font-semibold text-foreground">
+						schema.prisma
+					</span>
+				),
+			};
+			break;
+	}
+
+	return result;
 };
 
 const components = {
@@ -69,8 +165,50 @@ const components = {
 			setTimeout(() => setCopied(false), 2000);
 		};
 
+		const { headerIcon, headerLabel, isTerminal } = getCodeBlockType(match);
+
+		if (headerIcon && headerLabel) {
+			return (
+				<div className="my-6 rounded-lg border border-border bg-card">
+					<div className="flex items-center px-4 py-2 border-b border-border bg-muted rounded-t-lg">
+						{headerIcon}
+						{headerLabel}
+					</div>
+					<div className="relative group px-4 py-3">
+						<pre className="overflow-x-auto bg-transparent p-0 m-0 border-0 shadow-none">
+							<code
+								className="text-[15px] font-mono text-foreground"
+								{...rest}
+							>
+								{isTerminal && typeof children === "string"
+									? children.replace(
+											/\b(npx|npm|yarn)\b/g,
+											(m) =>
+												`<span style='color:var(--primary)'>${m}</span>`
+										)
+									: children}
+							</code>
+						</pre>
+						<div className="absolute top-2 right-2 rounded-md bg-background">
+							<button
+								onClick={copyToClipboard}
+								className="p-2 rounded-md bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer"
+								aria-label="Copy code"
+							>
+								{copied ? (
+									<FaCheck className="h-4 w-4 text-chart-3" />
+								) : (
+									<LuCopy className="h-4 w-4 text-muted-foreground" />
+								)}
+							</button>
+						</div>
+					</div>
+				</div>
+			);
+		}
+
 		return match ? (
-			<div className="relative group ">
+			<div className="relative group">
 				<pre className="overflow-x-auto rounded-lg my-4" {...rest}>
 					<code className={className} {...rest}>
 						{children}

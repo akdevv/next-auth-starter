@@ -1,0 +1,134 @@
+---
+title: 'Project Structure Overview'
+description: 'Understanding the organization and architecture of the Next.js Authentication Starter project'
+---
+
+# Project Structure Overview
+
+## Directory Structure
+
+```
+next-auth-starter/
+├── app/                    # Next.js 13+ app directory
+│   ├── (auth)/            # Authentication related routes
+│   ├── api/               # API routes
+│   └── page.tsx           # Home page
+├── components/            # Reusable React components
+│   ├── ui/               # UI components
+│   └── auth/             # Authentication components
+├── content/              # Content and documentation
+│   └── md/              # MDX documentation files
+├── emails/              # Email templates
+├── hooks/               # Custom React hooks
+├── lib/                 # Utility functions and shared code
+├── prisma/              # Database schema and migrations
+├── public/              # Static assets
+├── schema/              # TypeScript type definitions
+└── server/              # Server-side utilities
+```
+
+## Key Directories Explained
+
+### `/app`
+The main application directory using Next.js 13+ App Router:
+- `(auth)`: Authentication-related pages and components
+- `api`: API routes and endpoints
+- `page.tsx`: The main landing page
+
+### `/components`
+Reusable React components:
+- `ui/`: Basic UI components (buttons, inputs, etc.)
+- `auth/`: Authentication-specific components
+
+### `/content`
+Documentation and content:
+- `md/`: MDX files for documentation
+- Contains all the guides and tutorials
+
+### `/emails`
+Email template system:
+- HTML and text email templates
+- Email sending utilities
+
+### `/hooks`
+Custom React hooks:
+- Authentication hooks
+- Form handling hooks
+- Data fetching hooks
+
+### `/lib`
+Shared utilities and configurations:
+- Authentication setup
+- Database client
+- API utilities
+- Type definitions
+
+### `/prisma`
+Database management:
+- Schema definitions
+- Migrations
+- Seed data
+
+### `/schema`
+TypeScript type definitions:
+- API types
+- Database types
+- Component props
+
+### `/server`
+Server-side utilities:
+- Authentication helpers
+- API route handlers
+- Database operations
+
+## Key Files
+
+- `middleware.ts`: Next.js middleware for route protection
+- `next.config.ts`: Next.js configuration
+- `package.json`: Project dependencies and scripts
+- `tsconfig.json`: TypeScript configuration
+- `.env`: Environment variables (not in version control)
+
+## Development Workflow
+
+1. **Adding New Features**
+   - Create components in `/components`
+   - Add pages in `/app`
+   - Update types in `/schema`
+   - Add database changes in `/prisma`
+
+2. **Authentication Flow**
+   - Routes in `/app/(auth)`
+   - Components in `/components/auth`
+   - Utilities in `/lib/auth`
+
+3. **API Development**
+   - Routes in `/app/api`
+   - Types in `/schema`
+   - Utilities in `/lib`
+
+## Best Practices
+
+1. **Code Organization**
+   - Keep related files together
+   - Use consistent naming conventions
+   - Maintain clear separation of concerns
+
+2. **Type Safety**
+   - Use TypeScript for all new code
+   - Define types before implementation
+   - Keep types up to date
+
+3. **Documentation**
+   - Document new features
+   - Update existing documentation
+   - Include code examples
+
+## Next Steps
+
+1. Review the authentication setup
+2. Explore the database schema
+3. Understand the API structure
+4. Learn about the email system
+
+For detailed information about specific features, refer to the relevant sections in this documentation. 

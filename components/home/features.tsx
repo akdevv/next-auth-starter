@@ -1,10 +1,4 @@
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
 	FaKey,
 	FaGithub,
@@ -24,19 +18,21 @@ const FeatureCard = ({
 	description: string;
 }) => {
 	return (
-		<Card className="hover:shadow-md transition-all duration-300 hover:-translate-y-1 border-2 border-border/50 hover:border-primary/50">
-			<CardHeader className="pb-2">
-				<div className="h-12 w-12 flex items-center justify-center mb-3 text-primary bg-accent/10 rounded-full">
+		<Card className="bg-card text-card-foreground border border-border rounded-xl shadow-md hover:shadow-lg hover:border-primary transition-all duration-300 group">
+			<CardHeader className="flex flex-row items-start gap-4 p-6 pb-2">
+				<div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/30 group-hover:border-primary/60 transition-colors">
 					{icon}
 				</div>
-				<CardTitle className="text-xl">
-					{title}
-				</CardTitle>
+				<div>
+					<h3 className="text-lg font-bold leading-tight mb-1">
+						{title}
+					</h3>
+				</div>
 			</CardHeader>
-			<CardContent>
-				<CardDescription className="text-base text-muted-foreground/70">
+			<CardContent className="pt-0 pb-6 px-6">
+				<p className="text-sm text-muted-foreground leading-relaxed">
 					{description}
-				</CardDescription>
+				</p>
 			</CardContent>
 		</Card>
 	);
@@ -45,7 +41,7 @@ const FeatureCard = ({
 export default function Features() {
 	return (
 		<section className="py-16 md:py-24">
-			<div className="mx-auto max-w-3xl mb-12">
+			<div className="mx-auto max-w-3xl mb-12 px-4">
 				<h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">
 					Key Features
 				</h2>
@@ -56,7 +52,7 @@ export default function Features() {
 			</div>
 
 			{/* Cards */}
-			<div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+			<div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
 				<FeatureCard
 					icon={<FaKey className="text-xl" />}
 					title="Email/Password Login"

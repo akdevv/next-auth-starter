@@ -10,14 +10,16 @@ const StepCard = ({
 	description: string;
 }) => {
 	return (
-		<Card className="border-2 border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-md">
-			<CardContent className="pt-6">
-				<div className="flex flex-col items-center">
-					<div className="h-14 w-14 rounded-full bg-primary/10 border-2 border-primary text-primary flex items-center justify-center text-xl font-bold mb-4">
-						{number}
-					</div>
-					<h3 className="text-xl font-semibold mb-3">{title}</h3>
-					<p className="text-muted-foreground text-center">
+		<Card className="bg-card text-card-foreground border border-border rounded-xl shadow-md hover:shadow-lg hover:border-primary transition-all duration-300 group">
+			<CardContent className="flex flex-row items-start gap-4 p-6">
+				<div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/30 font-bold text-lg group-hover:border-primary/60 transition-colors">
+					{number}
+				</div>
+				<div>
+					<h3 className="text-lg font-bold leading-tight mb-1">
+						{title}
+					</h3>
+					<p className="text-sm text-muted-foreground leading-relaxed mt-1">
 						{description}
 					</p>
 				</div>

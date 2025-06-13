@@ -28,13 +28,13 @@ export default function DocsLayout({
 
 	return (
 		<div className="flex flex-col min-h-screen">
-			<DocsNavbar toggleSidebar={toggleSidebar} />
+			<div className="sticky top-0 z-50">
+				<DocsNavbar toggleSidebar={toggleSidebar} />
+			</div>
 			<div className="flex flex-row">
 				<DocsSidebar isOpen={sidebarOpen} />
-				<main className="flex-1 w-full">
-					<div className="container mx-auto px-4 py-8">
-						{children}
-					</div>
+				<main className="flex-1 w-full min-h-[calc(100vh-3rem)]">
+					<div className="mx-auto px-4 py-8">{children}</div>
 				</main>
 			</div>
 			<Footer />
