@@ -2,17 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/prisma";
-
-export interface SessionInfo {
-	id: string;
-	deviceName: string | null;
-	location: string | null;
-	ipAddress: string | null;
-	lastActive: Date;
-	createdAt: Date;
-	isCurrent: boolean;
-	userAgent: string | null;
-}
+import { SessionInfo } from "@/lib/types/session";
 
 export const getUserSessions = async (): Promise<SessionInfo[]> => {
 	try {
@@ -27,7 +17,7 @@ export const getUserSessions = async (): Promise<SessionInfo[]> => {
 		});
 
 		const sessions = await db.session.findMany({
-			where: { userId: session.user.id, expires: { gt: new Date() } },
+			where: { userId: session.user.id },
 		});
 
 		return sessions.map((sess) => ({
@@ -39,6 +29,10 @@ export const getUserSessions = async (): Promise<SessionInfo[]> => {
 			createdAt: sess.createdAt,
 			isCurrent: sess.id === currentSession?.id,
 			userAgent: sess.userAgent,
+			expires: sess.expires,
+			isRevoked: sess.isRevoked,
+			revokedAt: sess.revokedAt,
+			revokedBy: sess.revokedBy,
 		}));
 	} catch (error) {
 		console.error("Error fetching user sessions:", error);

@@ -17,15 +17,21 @@ export async function GET() {
 			return new NextResponse("No session token", { status: 401 });
 		}
 
-		// Check if the session exists in the database
+		// Check if the session exists in the database and is not expired
 		const dbSession = await db.session.findFirst({
 			where: {
 				userId: session.user.id,
+				sessionToken: sessionToken,
+				expires: {
+					gt: new Date(), // Check if session hasn't expired
+				},
 			},
 		});
 
 		if (!dbSession) {
-			return new NextResponse("Session not found", { status: 401 });
+			return new NextResponse("Session expired or not found", {
+				status: 401,
+			});
 		}
 
 		return new NextResponse("Session valid", { status: 200 });

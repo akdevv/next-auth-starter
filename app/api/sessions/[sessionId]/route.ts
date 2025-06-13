@@ -16,12 +16,12 @@ export async function DELETE(
 			);
 		}
 
-		const sessionId = await params.sessionId;
+		const { expireNow } = await request.json();
 
 		// Verify the session belongs to the current user
 		const sessionToRevoke = await db.session.findFirst({
 			where: {
-				id: sessionId,
+				id: params.sessionId,
 				userId: session.user.id,
 			},
 		});
@@ -42,7 +42,7 @@ export async function DELETE(
 		});
 
 		// Don't allow revoking current session
-		const isCurrentSession = currentSession?.id === sessionId;
+		const isCurrentSession = currentSession?.id === params.sessionId;
 
 		if (isCurrentSession) {
 			return NextResponse.json(
@@ -53,34 +53,23 @@ export async function DELETE(
 			);
 		}
 
-		// STEP 1: Mark session as revoked (don't delete immediately)
+		// STEP 1: Mark session as revoked
 		await db.session.update({
 			where: {
-				id: sessionId,
+				id: params.sessionId,
 			},
 			data: {
 				isRevoked: true,
 				revokedAt: new Date(),
 				revokedBy: currentSession?.id || "unknown",
-				expires: new Date(Date.now() - 1000), // Also expire it
+				expires: expireNow ? new Date() : undefined,
 			},
 		});
 
 		console.log(
-			`Session ${sessionId} marked as revoked by user ${session.user.id}`
+			`Session ${params.sessionId} marked as revoked by user ${session.user.id}`
 		);
 
-		// STEP 2: Schedule cleanup (delete revoked session after 60 seconds)
-		setTimeout(async () => {
-			try {
-				await db.session.delete({
-					where: { id: sessionId },
-				});
-				console.log(`Deleted revoked session ${sessionId}`);
-			} catch (error) {
-				console.error("Failed to cleanup revoked session:", error);
-			}
-		}, 60000); // 60 seconds delay
 
 		// Invalidate cache
 		revalidateTag("sessions");

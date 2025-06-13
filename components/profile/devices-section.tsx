@@ -2,8 +2,9 @@
 
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { SessionInfo } from "@/server/actions/session";
+import { SessionInfo } from "@/lib/types/session";
 import { useState, useEffect, useTransition } from "react";
+import { formatLastActive, clearSessionCookie } from "@/lib/session-helper";
 
 import {
 	FiMonitor,
@@ -62,6 +63,7 @@ export default function DevicesSection() {
 			if (!response.ok) throw new Error("Failed to fetch sessions");
 
 			const data = await response.json();
+			console.log("data", data);
 			const processedSessions = data.sessions.map((session: any) => ({
 				...session,
 				lastActive: new Date(session.lastActive),
@@ -71,6 +73,8 @@ export default function DevicesSection() {
 			if (processedSessions.length > 0) {
 				processedSessions[0].isCurrent = true;
 			}
+
+			console.log("processedSessions", processedSessions);
 
 			setSessions(processedSessions);
 		} catch (error) {
@@ -115,37 +119,6 @@ export default function DevicesSection() {
 		return <FiMonitor className="h-4 w-4" />;
 	};
 
-	const formatLastActive = (date: Date) => {
-		const now = new Date();
-		const diffInMinutes = Math.floor(
-			(now.getTime() - date.getTime()) / (1000 * 60)
-		);
-
-		if (diffInMinutes < 1) return "Just now";
-		if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-		if (diffInMinutes < 1440)
-			return `${Math.floor(diffInMinutes / 60)}h ago`;
-		return format(date, "MMM d, yyyy");
-	};
-
-	const clearSessionCookie = () => {
-		console.log("clearing session cookie");
-
-		const hostname = window.location.hostname;
-		const cookieOptions = [
-			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`,
-			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`,
-			`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`,
-			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`,
-			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`,
-			`authjs.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${hostname};`,
-		];
-
-		cookieOptions.forEach((cookie) => {
-			document.cookie = cookie;
-		});
-	};
-
 	const checkSessionValidity = async () => {
 		try {
 			const response = await fetch("/api/sessions/check", {
@@ -153,13 +126,14 @@ export default function DevicesSection() {
 			});
 
 			if (!response.ok) {
-				// Session is invalid, clear cookies and stop polling
+				// Session is invalid or expired, clear cookies and stop polling
 				clearSessionCookie();
 				if (pollingInterval) {
 					clearInterval(pollingInterval);
 					setPollingInterval(null);
 				}
 				router.refresh();
+				toast.error("Your session has expired. Please log in again.");
 				return false;
 			}
 			return true;
@@ -196,6 +170,9 @@ export default function DevicesSection() {
 			try {
 				const res = await fetch(`/api/sessions/${sessionId}`, {
 					method: "DELETE",
+					body: JSON.stringify({
+						expireNow: true,
+					}),
 				});
 
 				const result = await res.json();
@@ -224,15 +201,16 @@ export default function DevicesSection() {
 
 	// Revoke all other sessions
 	const handleLogoutAllDevices = async () => {
-		console.log("trying to logout all devices");
 		startTransition(async () => {
 			try {
 				const res = await fetch("/api/sessions/revoke-all", {
 					method: "POST",
+					body: JSON.stringify({
+						expireNow: true,
+					}),
 				});
 
 				const result = await res.json();
-				console.log(result);
 
 				if (!res.ok) {
 					throw new Error(
@@ -247,8 +225,6 @@ export default function DevicesSection() {
 				// Start polling after revoking all sessions
 				startPolling();
 
-				clearSessionCookie();
-
 				router.refresh();
 			} catch (error) {
 				console.error("Failed to revoke all sessions:", error);
@@ -261,8 +237,27 @@ export default function DevicesSection() {
 		});
 	};
 
-	const activeSessions = sessions.filter((session) => !session.isCurrent);
-	const currentSession = sessions.find((session) => session.isCurrent);
+	const getSessionStatus = (session: SessionInfo) => {
+		if (session.isCurrent) return "current";
+		if (session.isRevoked) return "expired";
+		return "active";
+	};
+
+	const formatRevocationInfo = (session: SessionInfo) => {
+		if (!session.isRevoked || !session.revokedAt) return null;
+
+		const revokedDate = new Date(session.revokedAt);
+		const now = new Date();
+		const diffInMinutes = Math.floor(
+			(now.getTime() - revokedDate.getTime()) / (1000 * 60)
+		);
+
+		if (diffInMinutes < 1) return "Just now";
+		if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+		if (diffInMinutes < 1440)
+			return `${Math.floor(diffInMinutes / 60)}h ago`;
+		return format(revokedDate, "MMM d, yyyy");
+	};
 
 	if (isLoading) {
 		return (
@@ -383,109 +378,242 @@ export default function DevicesSection() {
 								</p>
 							</TableCell>
 						) : (
-							sessions?.map((session) => (
-								<TableRow key={session.id}>
-									<TableCell className="pl-3">
-										<div className="flex flex-col gap-1">
-											<div className="flex items-center gap-2">
-												{getDeviceIcon(
-													session.deviceName,
-													session.userAgent
-												)}
-												<span className="font-medium">
-													{session.deviceName}
-												</span>
-											</div>
-											<div className="flex flex-col sm:hidden text-xs text-muted-foreground">
-												<span>
-													{session.location ||
-														"Unknown"}
-												</span>
-												<span>
-													{formatLastActive(
-														session.lastActive
-													)}
-												</span>
-											</div>
-											<span className="text-xs text-muted-foreground">
-												{currentSession?.location && (
-													<span className="flex items-center gap-1">
-														<FiMapPin className="h-3 w-3" />
-														{
-															currentSession.location
-														}
-													</span>
-												)}
-											</span>
-											{session.isCurrent && (
-												<Badge
-													variant="secondary"
-													className="mt-1 bg-yellow-100 text-yellow-800 border-none px-2 py-0.5 rounded"
-												>
-													Current
-												</Badge>
-											)}
-										</div>
-									</TableCell>
-									<TableCell className="hidden sm:table-cell">
-										{session.location || "Unknown"}
-									</TableCell>
-									<TableCell className="hidden sm:table-cell">
-										{formatLastActive(session.lastActive)}
-									</TableCell>
-									<TableCell className="text-right">
-										{!session.isCurrent && (
-											<AlertDialog
-												open={logoutSessionDialogOpen}
-												onOpenChange={
-													setLogoutSessionDialogOpen
-												}
-											>
-												<AlertDialogTrigger asChild>
-													<Button
-														disabled={isPending}
-														className="text-chart-4 bg-transparent hover:bg-transparent hover:underline hover:underline-offset-4 px-2 cursor-pointer"
-													>
-														{revokingSessionId ===
-														session.id ? (
-															<FiLoader className="h-4 w-4 animate-spin" />
-														) : (
-															"Logout"
+							<>
+								{/* Active Sessions */}
+								{sessions
+									.filter(
+										(session) =>
+											getSessionStatus(session) ===
+												"active" ||
+											getSessionStatus(session) ===
+												"current"
+									)
+									.map((session) => (
+										<TableRow key={session.id}>
+											<TableCell className="pl-3">
+												<div className="flex flex-col gap-1">
+													<div className="flex items-center gap-2">
+														{getDeviceIcon(
+															session.deviceName,
+															session.userAgent
 														)}
-													</Button>
-												</AlertDialogTrigger>
-
-												<AlertDialogContent className="max-w-[90vw] sm:max-w-md">
-													<AlertDialogHeader>
-														<AlertDialogTitle>
-															Logout
-														</AlertDialogTitle>
-														<AlertDialogDescription>
-															Are you sure you
-															want to logout?
-														</AlertDialogDescription>
-													</AlertDialogHeader>
-													<AlertDialogFooter>
-														<AlertDialogCancel className="hover:text-foreground/80 transition-all duration-300 cursor-pointer">
-															Cancel
-														</AlertDialogCancel>
-														<AlertDialogAction
-															onClick={() =>
-																handleRevokeSession(
-																	session.id
-																)
-															}
-															className="cursor-pointer"
+														<span className="font-medium">
+															{session.deviceName}
+														</span>
+													</div>
+													<div className="flex flex-col sm:hidden text-xs text-muted-foreground">
+														<span>
+															{session.location ||
+																"Unknown"}
+														</span>
+														<span>
+															{formatLastActive(
+																session.lastActive
+															)}
+														</span>
+													</div>
+													<span className="text-xs text-muted-foreground">
+														{session.location && (
+															<span className="flex items-center gap-1">
+																<FiMapPin className="h-3 w-3" />
+																{
+																	session.location
+																}
+															</span>
+														)}
+													</span>
+													{session.isCurrent && (
+														<Badge
+															variant="secondary"
+															className="mt-1 bg-yellow-100 text-yellow-800 border-none px-2 py-0.5 rounded"
 														>
-															Logout
-														</AlertDialogAction>
-													</AlertDialogFooter>
-												</AlertDialogContent>
-											</AlertDialog>
-										)}
-									</TableCell>
-								</TableRow>
-							))
+															Current
+														</Badge>
+													)}
+												</div>
+											</TableCell>
+											<TableCell className="hidden sm:table-cell">
+												{session.location || "Unknown"}
+											</TableCell>
+											<TableCell className="hidden sm:table-cell">
+												{formatLastActive(
+													session.lastActive
+												)}
+											</TableCell>
+											<TableCell className="text-right">
+												{!session.isCurrent && (
+													<AlertDialog
+														open={
+															logoutSessionDialogOpen
+														}
+														onOpenChange={
+															setLogoutSessionDialogOpen
+														}
+													>
+														<AlertDialogTrigger
+															asChild
+														>
+															<Button
+																disabled={
+																	isPending
+																}
+																className="text-chart-4 bg-transparent hover:bg-transparent hover:underline hover:underline-offset-4 px-2 cursor-pointer"
+															>
+																{revokingSessionId ===
+																session.id ? (
+																	<FiLoader className="h-4 w-4 animate-spin" />
+																) : (
+																	"Logout"
+																)}
+															</Button>
+														</AlertDialogTrigger>
+
+														<AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+															<AlertDialogHeader>
+																<AlertDialogTitle>
+																	Logout
+																</AlertDialogTitle>
+																<AlertDialogDescription>
+																	Are you sure
+																	you want to
+																	logout?
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<AlertDialogCancel className="hover:text-foreground/80 transition-all duration-300 cursor-pointer">
+																	Cancel
+																</AlertDialogCancel>
+																<AlertDialogAction
+																	onClick={() =>
+																		handleRevokeSession(
+																			session.id
+																		)
+																	}
+																	className="cursor-pointer"
+																>
+																	Logout
+																</AlertDialogAction>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
+												)}
+											</TableCell>
+										</TableRow>
+									))}
+
+								{/* Expired Sessions */}
+								{sessions.filter(
+									(session) =>
+										getSessionStatus(session) === "expired"
+								).length > 0 && (
+									<>
+										<TableRow>
+											<TableCell
+												colSpan={4}
+												className="bg-muted/30"
+											>
+												<p className="text-sm text-muted-foreground py-2">
+													Revoked Sessions
+												</p>
+											</TableCell>
+										</TableRow>
+										{sessions
+											.filter(
+												(session) =>
+													getSessionStatus(
+														session
+													) === "expired"
+											)
+											.map((session) => (
+												<TableRow
+													key={session.id}
+													className="opacity-60 hover:opacity-80 transition-opacity"
+												>
+													<TableCell className="pl-3">
+														<div className="flex flex-col gap-1">
+															<div className="flex items-center gap-2">
+																{getDeviceIcon(
+																	session.deviceName,
+																	session.userAgent
+																)}
+																<span className="font-medium text-muted-foreground">
+																	{
+																		session.deviceName
+																	}
+																</span>
+															</div>
+															<div className="flex flex-col sm:hidden text-xs text-muted-foreground">
+																<span>
+																	{session.location ||
+																		"Unknown"}
+																</span>
+																<span>
+																	{formatLastActive(
+																		session.lastActive
+																	)}
+																</span>
+																{formatRevocationInfo(
+																	session
+																) && (
+																	<span>
+																		Revoked{" "}
+																		{formatRevocationInfo(
+																			session
+																		)}
+																	</span>
+																)}
+															</div>
+															<span className="text-xs text-muted-foreground">
+																{session.location && (
+																	<span className="flex items-center gap-1">
+																		<FiMapPin className="h-3 w-3" />
+																		{
+																			session.location
+																		}
+																	</span>
+																)}
+															</span>
+															<Badge
+																variant="secondary"
+																className="mt-1 bg-gray-100 text-gray-600 border-none px-2 py-0.5 rounded"
+															>
+																Revoked
+															</Badge>
+														</div>
+													</TableCell>
+													<TableCell className="hidden sm:table-cell text-muted-foreground">
+														{session.location ||
+															"Unknown"}
+													</TableCell>
+													<TableCell className="hidden sm:table-cell text-muted-foreground">
+														<div className="flex flex-col gap-1">
+															<span>
+																{formatLastActive(
+																	session.lastActive
+																)}
+															</span>
+															{formatRevocationInfo(
+																session
+															) && (
+																<span className="text-xs">
+																	Revoked{" "}
+																	{formatRevocationInfo(
+																		session
+																	)}
+																</span>
+															)}
+														</div>
+													</TableCell>
+													<TableCell className="text-right">
+														<span className="text-xs text-muted-foreground">
+															Session revoked
+														</span>
+													</TableCell>
+												</TableRow>
+											))}
+									</>
+								)}
+							</>
 						)}
 					</TableBody>
 				</Table>

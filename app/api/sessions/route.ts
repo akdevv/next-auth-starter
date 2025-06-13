@@ -3,25 +3,11 @@ import { db } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 
-interface SessionInfo {
-	id: string;
-	deviceName: string | null;
-	location: string | null;
-	ipAddress: string | null;
-	lastActive: Date;
-	createdAt: Date;
-	isCurrent: boolean;
-	userAgent: string | null;
-}
-
 // Cached function to get user sessions
 const getCachedUserSessions = unstable_cache(
 	async (userId: string, currentSessionToken?: string) => {
 		const sessions = await db.session.findMany({
-			where: {
-				userId,
-				expires: { gt: new Date() },
-			},
+			where: { userId },
 			orderBy: { lastActive: "desc" },
 		});
 
@@ -33,6 +19,9 @@ const getCachedUserSessions = unstable_cache(
 			lastActive: sess.lastActive,
 			createdAt: sess.createdAt,
 			isCurrent: sess.sessionToken === currentSessionToken,
+			isRevoked: sess.isRevoked,
+			revokedAt: sess.revokedAt,
+			revokedBy: sess.revokedBy,
 			userAgent: sess.userAgent,
 		}));
 	},
