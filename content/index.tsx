@@ -17,32 +17,24 @@ export const docLinks: {
 		icon: <FaTools className="mr-2 h-4 w-4 hover:text-foreground" />,
 		subsections: [
 			{
+				label: "Overview",
+				href: "/docs/getting-started/overview",
+			},
+			{
 				label: "Local Setup",
 				href: "/docs/getting-started/local-setup",
 			},
 			{
-				label: "Project Structure Overview",
-				href: "/docs/getting-started/project-structure",
-			},
-			{
-				label: "Environment Variables Guide",
+				label: "Environment Variables",
 				href: "/docs/getting-started/environment-variables",
 			},
 			{
-				label: "Project Configuration",
-				href: "/docs/getting-started/project-configuration",
-			},
-			{
-				label: "Understanding Tech Stack",
+				label: "Tech Stack",
 				href: "/docs/getting-started/tech-stack",
 			},
 			{
-				label: "Development Workflow",
-				href: "/docs/getting-started/development-workflow",
-			},
-			{
-				label: "Common Dev Commands",
-				href: "/docs/getting-started/common-commands",
+				label: "Project Structure",
+				href: "/docs/getting-started/project-structure",
 			},
 		],
 	},
@@ -52,40 +44,36 @@ export const docLinks: {
 		icon: <FaUnlock className="mr-2 h-4 w-4 hover:text-foreground" />,
 		subsections: [
 			{
-				label: "Setting Up Google Auth",
-				href: "/docs/auth/setting-up-google-auth",
+				label: "Credentials Auth",
+				href: "/docs/auth/credentials-auth",
 			},
 			{
-				label: "Using Credentials Auth",
-				href: "/docs/auth/setting-up-credentials-auth",
+				label: "Google OAuth Setup",
+				href: "/docs/auth/google-oauth",
 			},
 			{
-				label: "Adding 2FA",
-				href: "/docs/auth/adding-2fa",
+				label: "2FA Setup",
+				href: "/docs/auth/two-factor-auth",
 			},
 			{
-				label: "Email Verification System",
+				label: "Email Verification Flow",
 				href: "/docs/auth/email-verification",
-			},
-			{
-				label: "Session Management",
-				href: "/docs/auth/session-management",
 			},
 			{
 				label: "Password Reset Flow",
 				href: "/docs/auth/password-reset",
 			},
 			{
-				label: "Social Login Integration",
-				href: "/docs/auth/social-login",
+				label: "Session & Device Management",
+				href: "/docs/auth/session-management",
 			},
 			{
-				label: "Authentication Error Handling",
+				label: "Auth Error Handling",
 				href: "/docs/auth/error-handling",
 			},
 			{
-				label: "Security Best Practices",
-				href: "/docs/auth/security-best-practices",
+				label: "Social Logins (Optional)",
+				href: "/docs/auth/social-logins",
 			},
 		],
 	},

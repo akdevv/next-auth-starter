@@ -1,140 +1,157 @@
 ---
-title: 'Environment Variables Guide'
-description: 'Complete guide to configuring environment variables for the Next.js Authentication Starter project'
+title: Environment Variables
+description: Complete guide to all required environment variables and their configuration
+tags: [environment, configuration, setup]
 ---
 
-# Environment Variables Guide
+# 🔧 Environment Variables Guide
 
-## Required Variables
+This guide covers all the environment variables needed to configure your Next Auth Starter project properly.
 
-### Database Configuration
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+## 📁 Environment File Setup
+
+Create a `.env` file in your project root:
+
+```bash
+# Copy from example (if available)
+cp .env.example .env
+
+# Or create manually
+touch .env
 ```
-- Required for database connection
-- Format depends on your database provider
-- Never commit this to version control
 
-### Authentication
+## 🔑 Required Variables
+
+### Application Configuration
+
 ```env
-NEXTAUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-```
-- `NEXTAUTH_SECRET`: Used to encrypt tokens and cookies
-- `NEXTAUTH_URL`: Your application's base URL
+# Base URL for your application
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 
-### Email Service
+# Secret key for session encryption (generate a secure random string)
+AUTH_SECRET="your-super-secret-auth-key-here"
+```
+
+**📝 Notes:**
+- `AUTH_SECRET`: Use a secure random string (32+ characters)
+- Generate with: `openssl rand -base64 32`
+- Change `NEXT_PUBLIC_BASE_URL` for production deployment
+
+### 🗄️ Database Configuration
+
 ```env
-RESEND_API_KEY="re_123..."
+# Supabase database connection string
+DATABASE_URL="postgresql://username:password@host:port/database?schema=public"
 ```
-- Required for sending emails
-- Get your API key from [Resend](https://resend.com)
 
-## Optional Variables
+**📝 How to get your Database URL:**
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Navigate to **Settings** → **Database**
+3. Copy the connection string under **Connection string**
+4. Replace `[YOUR-PASSWORD]` with your actual database password
 
-### Google OAuth
+### 🌐 Google OAuth Setup
+
 ```env
-GOOGLE_CLIENT_ID="your-client-id"
-GOOGLE_CLIENT_SECRET="your-client-secret"
+# Google OAuth credentials
+GOOGLE_CLIENT_ID="your-google-client-id.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ```
-- Required only if using Google authentication
-- Get these from Google Cloud Console
 
-### GitHub OAuth
+**📝 How to get Google OAuth credentials:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Navigate to **APIs & Services** → **Credentials**
+4. Click **Create Credentials** → **OAuth 2.0 Client IDs**
+5. Set **Application type** to "Web application"
+6. Add authorized redirect URIs:
+   - `http://localhost:3000/api/auth/callback/google` (development)
+   - `https://yourdomain.com/api/auth/callback/google` (production)
+
+### 📧 Email Service Configuration
+
 ```env
-GITHUB_ID="your-github-client-id"
-GITHUB_SECRET="your-github-client-secret"
+# Resend API key for email services
+NEXT_PUBLIC_RESEND_API_KEY="re_your-resend-api-key"
 ```
-- Required only if using GitHub authentication
-- Get these from GitHub Developer Settings
 
-### Rate Limiting
+**📝 How to get Resend API key:**
+1. Sign up at [Resend](https://resend.com/)
+2. Navigate to **API Keys** in your dashboard
+3. Click **Create API Key**
+4. Give it a name and copy the generated key
+
+## 🔒 Optional Security Variables
+
 ```env
-RATE_LIMIT_MAX=100
-RATE_LIMIT_WINDOW_MS=900000
+# Additional security configurations (optional)
+NEXTAUTH_URL="http://localhost:3000"  # Only needed in production
+NODE_ENV="development"                 # Automatically set by framework
 ```
-- Optional rate limiting configuration
-- Default: 100 requests per 15 minutes
 
-## Development vs Production
+## 🚀 Production Environment
 
-### Development
+For production deployment, update these variables:
+
 ```env
-NODE_ENV="development"
+# Production configuration
+NEXT_PUBLIC_BASE_URL="https://yourdomain.com"
+AUTH_SECRET="your-production-secret-key"
+DATABASE_URL="your-production-database-url"
+GOOGLE_CLIENT_ID="your-production-google-client-id"
+GOOGLE_CLIENT_SECRET="your-production-google-client-secret"
+NEXT_PUBLIC_RESEND_API_KEY="your-production-resend-key"
 ```
-- Enables development features
-- Shows detailed error messages
-- Disables caching
 
-### Production
-```env
-NODE_ENV="production"
+## 📋 Environment Variables Checklist
+
+Use this checklist to ensure all variables are properly configured:
+
+- [ ] `NEXT_PUBLIC_BASE_URL` - Matches your domain
+- [ ] `AUTH_SECRET` - Strong random string (32+ chars)
+- [ ] `DATABASE_URL` - Valid Supabase connection string
+- [ ] `GOOGLE_CLIENT_ID` - From Google Cloud Console
+- [ ] `GOOGLE_CLIENT_SECRET` - From Google Cloud Console  
+- [ ] `NEXT_PUBLIC_RESEND_API_KEY` - From Resend dashboard
+
+## 🛡️ Security Best Practices
+
+**🔐 Keep secrets secure:**
+- Never commit `.env` files to version control
+- Use different secrets for development and production
+- Rotate secrets regularly in production
+- Use environment-specific configurations
+
+**📁 File structure:**
 ```
-- Optimizes for performance
-- Minimizes error details
-- Enables caching
+.env.local      # Local development (highest priority)
+.env.production # Production environment  
+.env.example    # Template file (safe to commit)
+.gitignore      # Should include .env*
+```
 
-## Security Best Practices
+## 🚨 Troubleshooting
 
-1. **Never Commit .env Files**
-   - Add `.env` to `.gitignore`
-   - Use `.env.example` for reference
-   - Keep secrets secure
+**Common issues and solutions:**
 
-2. **Use Strong Secrets**
-   - Generate strong random strings
-   - Use different secrets per environment
-   - Rotate secrets periodically
+**❌ "AUTH_SECRET is not defined"**
+- Ensure `AUTH_SECRET` is set in your `.env` file
+- Restart your development server after adding variables
 
-3. **Environment Separation**
-   - Use different values for dev/prod
-   - Never use production values in development
-   - Keep production secrets secure
+**❌ Database connection failed**
+- Verify `DATABASE_URL` format and credentials
+- Check if Supabase project is active and accessible
 
-## Setting Up Environment Variables
+**❌ Google OAuth not working**
+- Verify redirect URIs in Google Cloud Console
+- Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
 
-1. **Create .env File**
-   ```bash
-   cp .env.example .env
-   ```
+**❌ Email sending fails**
+- Check `NEXT_PUBLIC_RESEND_API_KEY` is valid
+- Verify Resend account is active and has sending quotas
 
-2. **Fill in Values**
-   - Copy values from your service providers
-   - Generate secure secrets
-   - Test configuration
+## 🔄 Environment Validation
 
-3. **Verify Setup**
-   ```bash
-   bun dev
-   ```
-   - Check for missing variables
-   - Verify connections
-   - Test functionality
+The application automatically validates environment variables on startup. Check your terminal for any missing or invalid configurations.
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Missing Variables**
-   - Check `.env` file exists
-   - Verify all required variables
-   - Check for typos
-
-2. **Invalid Values**
-   - Verify format of URLs
-   - Check API key validity
-   - Test database connection
-
-3. **Environment Mismatch**
-   - Check `NODE_ENV` setting
-   - Verify environment-specific values
-   - Test in correct environment
-
-## Next Steps
-
-1. Set up your database
-2. Configure authentication providers
-3. Test email functionality
-4. Deploy to production
-
-For more detailed information about specific features, refer to the relevant sections in this documentation. 
+Ready to configure your database? Head to the [Tech Stack](/docs/getting-started/tech-stack) guide next! 

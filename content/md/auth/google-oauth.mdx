@@ -1,0 +1,455 @@
+---
+title: Google OAuth Setup
+description: Complete guide to enable and configure Google sign-in authentication
+tags: [google-oauth, social-auth, oauth2, google-cloud]
+---
+
+# 🌐 Google OAuth Setup
+
+Learn how to integrate Google OAuth authentication for seamless social login in your Next Auth Starter application.
+
+## 🎯 Overview
+
+Google OAuth allows users to sign in using their existing Google accounts, providing a smooth authentication experience while maintaining security.
+
+## 🚀 Quick Setup Steps
+
+### 1️⃣ Google Cloud Console Configuration
+
+Create OAuth credentials in Google Cloud Console:
+
+**Step 1: Create a Project**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Click **"Select a project"** → **"New Project"**
+3. Enter project name (e.g., "Next Auth Starter")
+4. Click **"Create"**
+
+**Step 2: Enable Google+ API**
+```bash
+# Navigate to APIs & Services → Library
+# Search for "Google+ API" and enable it
+```
+
+**Step 3: Create OAuth Credentials**
+1. Go to **APIs & Services** → **Credentials**
+2. Click **"Create Credentials"** → **"OAuth 2.0 Client IDs"**
+3. Configure OAuth consent screen (if first time)
+4. Set **Application type** to "Web application"
+5. Add authorized redirect URIs:
+
+```
+# Development
+http://localhost:3000/api/auth/callback/google
+
+# Production (replace with your domain)
+https://yourdomain.com/api/auth/callback/google
+```
+
+### 2️⃣ Environment Variables
+
+Add your Google OAuth credentials to `.env`:
+
+```env
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID="123456789-abcdefghijklmnop.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-abcdefghijklmnopqrstuvwxyz"
+```
+
+## 🔧 NextAuth Integration
+
+### Configure Google Provider
+
+```ts
+// lib/auth.ts
+import GoogleProvider from "next-auth/providers/google"
+import { prisma } from "@/lib/prisma"
+
+export const authConfig = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    })
+  ],
+  callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        try {
+          // Check if user exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          })
+
+          if (!existingUser) {
+            // Create new user
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+                emailVerified: true, // Google emails are pre-verified
+                provider: "google",
+                providerId: account.providerAccountId,
+              }
+            })
+          }
+          
+          return true
+        } catch (error) {
+          console.error("Error during Google sign in:", error)
+          return false
+        }
+      }
+      
+      return true
+    },
+    
+    async session({ session, token }) {
+      if (session.user?.email) {
+        const user = await prisma.user.findUnique({
+          where: { email: session.user.email }
+        })
+        
+        if (user) {
+          session.user.id = user.id
+          session.user.emailVerified = user.emailVerified
+        }
+      }
+      
+      return session
+    }
+  }
+}
+```
+
+## 🎨 Frontend Implementation
+
+### Google Sign-In Button
+
+```tsx
+// components/auth/google-signin-button.tsx
+"use client"
+
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { FcGoogle } from "react-icons/fc"
+
+interface GoogleSignInButtonProps {
+  children: React.ReactNode
+  callbackUrl?: string
+}
+
+export function GoogleSignInButton({ 
+  children, 
+  callbackUrl = "/profile" 
+}: GoogleSignInButtonProps) {
+  const handleSignIn = () => {
+    signIn("google", { callbackUrl })
+  }
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={handleSignIn}
+    >
+      <FcGoogle className="mr-2 h-4 w-4" />
+      {children}
+    </Button>
+  )
+}
+```
+
+### Complete Login Form with Google
+
+```tsx
+// components/auth/login-form.tsx
+"use client"
+
+import { GoogleSignInButton } from "./google-signin-button"
+import { Separator } from "@/components/ui/separator"
+import { CredentialsForm } from "./credentials-form"
+
+export function LoginForm() {
+  return (
+    <div className="space-y-6">
+      {/* Google OAuth Button */}
+      <GoogleSignInButton>
+        Continue with Google
+      </GoogleSignInButton>
+
+      {/* Separator */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <Separator className="w-full" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            Or continue with email
+          </span>
+        </div>
+      </div>
+
+      {/* Email/Password Form */}
+      <CredentialsForm />
+    </div>
+  )
+}
+```
+
+## 🗄️ Database Schema Updates
+
+Ensure your user model supports OAuth:
+
+```prisma
+// prisma/schema.prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  password      String?   // Optional for OAuth users
+  emailVerified Boolean   @default(false)
+  provider      String?   // "google", "credentials", etc.
+  providerId    String?   // Google user ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+```
+
+Update your database:
+
+```bash
+# Generate and apply migration
+bun prisma db push
+
+# Or create a migration
+bun prisma migrate dev --name add-oauth-support
+```
+
+## 🔒 Advanced Configuration
+
+### Custom OAuth Scopes
+
+Request additional permissions from Google:
+
+```ts
+// lib/auth.ts
+GoogleProvider({
+  clientId: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  authorization: {
+    params: {
+      scope: "openid email profile",
+      prompt: "consent",
+      access_type: "offline",
+      response_type: "code"
+    }
+  }
+})
+```
+
+### Profile Customization
+
+Customize user profile data from Google:
+
+```ts
+// lib/auth.ts
+callbacks: {
+  async signIn({ user, account, profile }) {
+    if (account?.provider === "google" && profile) {
+      // Access additional Google profile data
+      const googleProfile = profile as any
+      
+      await prisma.user.upsert({
+        where: { email: user.email! },
+        update: {
+          name: googleProfile.name,
+          image: googleProfile.picture,
+          locale: googleProfile.locale,
+        },
+        create: {
+          email: user.email!,
+          name: googleProfile.name,
+          image: googleProfile.picture,
+          emailVerified: true,
+          provider: "google",
+          providerId: account.providerAccountId,
+        }
+      })
+    }
+    
+    return true
+  }
+}
+```
+
+## 🎯 User Experience Enhancements
+
+### Loading States
+
+```tsx
+// components/auth/google-signin-button.tsx
+"use client"
+
+import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
+
+export function GoogleSignInButton() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSignIn = async () => {
+    setIsLoading(true)
+    try {
+      await signIn("google", { callbackUrl: "/profile" })
+    } catch (error) {
+      console.error("Google sign in error:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={handleSignIn}
+      disabled={isLoading}
+    >
+      {isLoading ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <FcGoogle className="mr-2 h-4 w-4" />
+      )}
+      {isLoading ? "Signing in..." : "Continue with Google"}
+    </Button>
+  )
+}
+```
+
+### Error Handling
+
+```tsx
+// app/auth/error/page.tsx
+"use client"
+
+import { useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+
+const errorMessages = {
+  OAuthSignin: "Error occurred during OAuth signin",
+  OAuthCallback: "OAuth callback error",
+  OAuthCreateAccount: "Could not create OAuth account",
+  EmailCreateAccount: "Could not create email account",
+  Callback: "OAuth callback error",
+  OAuthAccountNotLinked: "Email already exists with different provider",
+  Default: "An unexpected error occurred"
+}
+
+export default function AuthError() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error") as keyof typeof errorMessages
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="text-center space-y-4">
+        <h1 className="text-2xl font-bold">Authentication Error</h1>
+        <p className="text-muted-foreground">
+          {errorMessages[error] || errorMessages.Default}
+        </p>
+        <Button asChild>
+          <Link href="/auth/login">Try Again</Link>
+        </Button>
+      </div>
+    </div>
+  )
+}
+```
+
+## 🔐 Security Considerations
+
+### Environment Security
+
+```env
+# Production environment variables
+GOOGLE_CLIENT_ID="your-production-client-id"
+GOOGLE_CLIENT_SECRET="your-production-client-secret"
+NEXTAUTH_URL="https://yourdomain.com"
+NEXTAUTH_SECRET="your-production-secret"
+```
+
+### Domain Verification
+
+For production, verify your domain in Google Search Console:
+
+1. Go to [Google Search Console](https://search.google.com/search-console)
+2. Add your domain property
+3. Verify ownership using HTML file or DNS record
+
+## ✅ Testing Checklist
+
+### Development Testing
+
+- [ ] Google sign-in button appears and works
+- [ ] User data is correctly saved to database
+- [ ] Sessions persist after Google authentication
+- [ ] Error handling works for failed attempts
+- [ ] Redirect after successful sign-in works
+
+### Production Testing
+
+- [ ] OAuth consent screen is configured
+- [ ] Production redirect URIs are set correctly
+- [ ] SSL certificate is valid
+- [ ] Environment variables are secure
+
+## 🚨 Common Issues
+
+**❌ "Error 400: redirect_uri_mismatch"**
+- Check redirect URIs in Google Cloud Console
+- Ensure exact match including protocol (http/https)
+- Verify NEXTAUTH_URL environment variable
+
+**❌ "OAuth consent screen not configured"**
+- Complete OAuth consent screen setup in Google Cloud Console
+- Add required scopes and user information
+
+**❌ Users can't sign in with existing email**
+- Handle account linking in `signIn` callback
+- Check for existing users with same email
+
+## 🔄 Next Steps
+
+1. Set up [Account Linking](/docs/auth/account-linking)
+2. Configure [Session Management](/docs/auth/session-management)
+3. Add more [Social Logins](/docs/auth/social-logins)
+4. Implement [User Profile](/docs/profile) management
+
+Your Google OAuth integration is now ready for seamless authentication! 🎉 

@@ -12,11 +12,11 @@ const StepCard = ({
 	return (
 		<Card className="bg-card text-card-foreground border border-border rounded-xl shadow-md hover:shadow-lg hover:border-primary transition-all duration-300 group">
 			<CardContent className="flex flex-row items-start gap-4 p-6">
-				<div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/30 font-bold text-lg group-hover:border-primary/60 transition-colors">
+				<div className="p-4 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/30 font-bold text-lg group-hover:border-primary/60 transition-colors">
 					{number}
 				</div>
 				<div>
-					<h3 className="text-lg font-bold leading-tight mb-1">
+					<h3 className="text-lg font-bold leading-tight mb-3">
 						{title}
 					</h3>
 					<p className="text-sm text-muted-foreground leading-relaxed mt-1">

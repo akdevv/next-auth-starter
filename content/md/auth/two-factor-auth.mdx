@@ -1,362 +1,662 @@
 ---
-title: 'Adding 2FA'
-description: 'Learn how to implement and configure two-factor authentication in your Next.js application'
+title: 2FA Setup
+description: Adding time-based OTP two-factor authentication with backup codes for enhanced security
+tags: [2fa, totp, security, backup-codes, multi-factor]
 ---
 
-# Adding Two-Factor Authentication
+# 🛡️ Two-Factor Authentication Setup
 
-## Overview
+Enhance your application's security with Time-based One-Time Password (TOTP) authentication and backup codes.
 
-Two-factor authentication (2FA) adds an extra layer of security to your application. This guide covers implementation using authenticator apps and backup codes.
+## 🎯 Overview
 
-## Implementation
+Two-Factor Authentication (2FA) adds an extra layer of security by requiring users to provide a second verification factor in addition to their password.
 
-### 1. Database Schema
+## 📦 Required Dependencies
+
+Install the necessary packages for 2FA implementation:
+
+```bash
+# Install TOTP and QR code generation packages
+bun add speakeasy qrcode
+bun add -D @types/qrcode
+```
+
+## 🗄️ Database Schema
+
+Add 2FA support to your user model:
 
 ```prisma
 // prisma/schema.prisma
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String?
-  twoFactorSecret String?
-  twoFactorEnabled Boolean @default(false)
-  backupCodes   BackupCode[]
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String?
+  emailVerified         Boolean   @default(false)
+  twoFactorEnabled      Boolean   @default(false)
+  twoFactorSecret       String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  twoFactorTokens       TwoFactorToken[]
+  backupCodes           BackupCode[]
+}
+
+model TwoFactorToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BackupCode {
   id        String   @id @default(cuid())
-  code      String
-  used      Boolean  @default(false)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  code      String   @unique
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
+  usedAt    DateTime?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 ```
 
-### 2. Setup 2FA
+Update your database:
 
-```typescript
-// lib/2fa.ts
-import { authenticator } from "otplib";
-import { prisma } from "@/lib/prisma";
-import { generateBackupCodes } from "@/lib/backup-codes";
-
-export async function setup2FA(userId: string) {
-  // Generate secret
-  const secret = authenticator.generateSecret();
-  
-  // Generate backup codes
-  const backupCodes = await generateBackupCodes(userId);
-  
-  // Save secret to user
-  await prisma.user.update({
-    where: { id: userId },
-    data: { twoFactorSecret: secret },
-  });
-  
-  // Generate QR code
-  const otpauth = authenticator.keyuri(
-    user.email,
-    "Your App Name",
-    secret
-  );
-  
-  return {
-    secret,
-    otpauth,
-    backupCodes,
-  };
-}
+```bash
+bun prisma db push
 ```
 
-### 3. Verify 2FA
+## 🔧 2FA Setup Implementation
 
-```typescript
-// lib/2fa.ts
-export async function verify2FA(userId: string, token: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-  
-  if (!user?.twoFactorSecret) {
-    throw new Error("2FA not set up");
-  }
-  
-  const isValid = authenticator.verify({
-    token,
-    secret: user.twoFactorSecret,
-  });
-  
-  if (!isValid) {
-    throw new Error("Invalid 2FA code");
-  }
-  
-  return true;
-}
-```
+### 1️⃣ Generate Secret and QR Code
 
-### 4. Enable 2FA
+```ts
+// server/actions/2fa.ts
+"use server"
 
-```typescript
-// app/api/auth/2fa/enable/route.ts
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { setup2FA } from "@/lib/2fa";
+import speakeasy from "speakeasy"
+import QRCode from "qrcode"
+import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 
-export async function POST() {
-  const session = await getServerSession();
-  
+export async function setup2FA() {
+  const session = await auth()
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    throw new Error("Unauthorized")
   }
-  
-  try {
-    const { secret, otpauth, backupCodes } = await setup2FA(session.user.id);
-    
-    return NextResponse.json({
-      secret,
-      otpauth,
-      backupCodes,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to setup 2FA" },
-      { status: 500 }
-    );
+
+  // Generate secret
+  const secret = speakeasy.generateSecret({
+    name: `${process.env.NEXT_PUBLIC_APP_NAME || "Next Auth Starter"} (${session.user.email})`,
+    issuer: process.env.NEXT_PUBLIC_APP_NAME || "Next Auth Starter",
+    length: 32,
+  })
+
+  // Generate QR code
+  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url!)
+
+  // Store temporary secret (not yet enabled)
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { twoFactorSecret: secret.base32 }
+  })
+
+  return {
+    secret: secret.base32,
+    qrCodeUrl,
+    manualEntryKey: secret.base32,
   }
 }
 ```
 
-## UI Components
+### 2️⃣ Verify and Enable 2FA
 
-### 1. 2FA Setup Form
+```ts
+// server/actions/2fa.ts
+export async function verify2FASetup(token: string) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
 
-```typescript
-// components/auth/2fa-setup-form.tsx
-import { useState } from "react";
-import QRCode from "qrcode.react";
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id }
+  })
 
-export function TwoFactorSetupForm() {
-  const [step, setStep] = useState(1);
-  const [secret, setSecret] = useState("");
-  const [otpauth, setOtpauth] = useState("");
-  const [backupCodes, setBackupCodes] = useState<string[]>([]);
-  const [verificationCode, setVerificationCode] = useState("");
+  if (!user?.twoFactorSecret) {
+    throw new Error("2FA setup not started")
+  }
+
+  // Verify the token
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 2, // Allow 2 time windows for clock drift
+  })
+
+  if (!verified) {
+    throw new Error("Invalid verification code")
+  }
+
+  // Generate backup codes
+  const backupCodes = generateBackupCodes()
   
+  // Enable 2FA and save backup codes
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: { twoFactorEnabled: true }
+    }),
+    prisma.backupCode.createMany({
+      data: backupCodes.map(code => ({
+        userId: session.user.id!,
+        code: code,
+      }))
+    })
+  ])
+
+  return { backupCodes }
+}
+
+function generateBackupCodes(): string[] {
+  const codes: string[] = []
+  for (let i = 0; i < 8; i++) {
+    // Generate 8-digit backup codes
+    const code = Math.random().toString().slice(2, 10)
+    codes.push(code)
+  }
+  return codes
+}
+```
+
+### 3️⃣ Disable 2FA
+
+```ts
+// server/actions/2fa.ts
+export async function disable2FA() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: { 
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+      }
+    }),
+    prisma.backupCode.deleteMany({
+      where: { userId: session.user.id }
+    }),
+    prisma.twoFactorToken.deleteMany({
+      where: { userId: session.user.id }
+    })
+  ])
+
+  return { success: true }
+}
+```
+
+## 🎨 Frontend Components
+
+### 2FA Setup Component
+
+```tsx
+// components/profile/two-factor-setup.tsx
+"use client"
+
+import { useState } from "react"
+import { setup2FA, verify2FASetup } from "@/server/actions/2fa"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import Image from "next/image"
+
+export function TwoFactorSetup() {
+  const [step, setStep] = useState<'start' | 'scan' | 'verify' | 'complete'>('start')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
+  const [manualKey, setManualKey] = useState<string>("")
+  const [verificationCode, setVerificationCode] = useState<string>("")
+  const [backupCodes, setBackupCodes] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>("")
+
   const handleSetup = async () => {
-    try {
-      const response = await fetch("/api/auth/2fa/enable", {
-        method: "POST",
-      });
-      
-      const data = await response.json();
-      
-      setSecret(data.secret);
-      setOtpauth(data.otpauth);
-      setBackupCodes(data.backupCodes);
-      setStep(2);
-    } catch (error) {
-      console.error("Failed to setup 2FA:", error);
-    }
-  };
-  
-  const handleVerify = async () => {
-    try {
-      const response = await fetch("/api/auth/2fa/verify", {
-        method: "POST",
-        body: JSON.stringify({ code: verificationCode }),
-      });
-      
-      if (response.ok) {
-        setStep(3);
-      }
-    } catch (error) {
-      console.error("Failed to verify 2FA:", error);
-    }
-  };
-  
-  return (
-    <div>
-      {step === 1 && (
-        <button onClick={handleSetup}>
-          Setup 2FA
-        </button>
-      )}
-      
-      {step === 2 && (
-        <div>
-          <h2>Scan QR Code</h2>
-          <QRCode value={otpauth} />
-          <p>Or enter this code manually: {secret}</p>
-          
-          <input
-            type="text"
-            value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
-            placeholder="Enter 6-digit code"
-          />
-          <button onClick={handleVerify}>
-            Verify
-          </button>
-        </div>
-      )}
-      
-      {step === 3 && (
-        <div>
-          <h2>Backup Codes</h2>
-          <p>Save these backup codes in a secure place:</p>
-          <ul>
-            {backupCodes.map((code) => (
-              <li key={code}>{code}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-### 2. 2FA Verification Form
-
-```typescript
-// components/auth/2fa-verify-form.tsx
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
-export function TwoFactorVerifyForm() {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const router = useRouter();
-  
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
+    setIsLoading(true)
+    setError("")
     
     try {
-      const response = await fetch("/api/auth/2fa/verify", {
-        method: "POST",
-        body: JSON.stringify({ code }),
-      });
-      
-      if (response.ok) {
-        router.push("/dashboard");
-      } else {
-        setError("Invalid code");
-      }
+      const result = await setup2FA()
+      setQrCodeUrl(result.qrCodeUrl)
+      setManualKey(result.manualEntryKey)
+      setStep('scan')
     } catch (error) {
-      setError("An error occurred");
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
     }
-  };
-  
-  return (
-    <form onSubmit={handleVerify}>
-      {error && <div className="error">{error}</div>}
-      <input
-        type="text"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="Enter 6-digit code"
-        required
-      />
-      <button type="submit">Verify</button>
-    </form>
-  );
+  }
+
+  const handleVerify = async () => {
+    if (!verificationCode) return
+    
+    setIsLoading(true)
+    setError("")
+    
+    try {
+      const result = await verify2FASetup(verificationCode)
+      setBackupCodes(result.backupCodes)
+      setStep('complete')
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (step === 'start') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Enable Two-Factor Authentication</CardTitle>
+          <CardDescription>
+            Add an extra layer of security to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Two-factor authentication helps protect your account by requiring a second verification step when signing in.
+          </p>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <Button onClick={handleSetup} disabled={isLoading}>
+            {isLoading ? "Setting up..." : "Enable 2FA"}
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === 'scan') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Scan QR Code</CardTitle>
+          <CardDescription>
+            Use your authenticator app to scan this QR code
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex justify-center">
+            <Image
+              src={qrCodeUrl}
+              alt="2FA QR Code"
+              width={200}
+              height={200}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Can't scan the code?</p>
+            <p className="text-xs text-muted-foreground break-all">
+              Enter this key manually: <code className="bg-muted px-1 rounded">{manualKey}</code>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="verification-code" className="text-sm font-medium">
+              Enter verification code
+            </label>
+            <Input
+              id="verification-code"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              placeholder="123456"
+              maxLength={6}
+            />
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setStep('start')}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleVerify} 
+              disabled={isLoading || !verificationCode}
+            >
+              {isLoading ? "Verifying..." : "Verify & Enable"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === 'complete') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>2FA Enabled Successfully! 🎉</CardTitle>
+          <CardDescription>
+            Save these backup codes in a safe place
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertDescription>
+              These backup codes can be used to access your account if you lose access to your authenticator app. Each code can only be used once.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-lg">
+            {backupCodes.map((code, index) => (
+              <code key={index} className="text-sm font-mono">
+                {code}
+              </code>
+            ))}
+          </div>
+
+          <Button onClick={() => window.location.reload()}>
+            Continue
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 }
 ```
 
-## Backup Codes
+## 🔐 Authentication Integration
 
-### 1. Generate Backup Codes
+### Modified Login Flow
 
-```typescript
-// lib/backup-codes.ts
-import { randomBytes } from "crypto";
+```ts
+// lib/auth.ts - Updated credentials provider
+CredentialsProvider({
+  async authorize(credentials) {
+    const { email, password, twoFactorCode } = credentials
 
-export async function generateBackupCodes(userId: string) {
-  const codes = Array.from({ length: 10 }, () => {
-    return randomBytes(4).toString("hex").toUpperCase();
-  });
-  
-  await prisma.backupCode.createMany({
-    data: codes.map((code) => ({
-      code,
-      userId,
-    })),
-  });
-  
-  return codes;
-}
-```
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
 
-### 2. Verify Backup Code
+    if (!user || !user.password) return null
 
-```typescript
-// lib/backup-codes.ts
-export async function verifyBackupCode(userId: string, code: string) {
+    const passwordValid = await bcrypt.compare(password, user.password)
+    if (!passwordValid) return null
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      if (!twoFactorCode) {
+        // Return a special response indicating 2FA is required
+        throw new Error("2FA_REQUIRED")
+      }
+
+      // Verify 2FA code
+      const isValidCode = await verify2FACode(user.id, twoFactorCode)
+      if (!isValidCode) {
+        throw new Error("Invalid 2FA code")
+      }
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      emailVerified: user.emailVerified,
+    }
+  }
+})
+
+async function verify2FACode(userId: string, code: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  })
+
+  if (!user?.twoFactorSecret) return false
+
+  // Check TOTP code
+  const totpValid = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token: code,
+    window: 2,
+  })
+
+  if (totpValid) return true
+
+  // Check backup codes
   const backupCode = await prisma.backupCode.findFirst({
     where: {
       userId,
       code,
       used: false,
-    },
-  });
-  
-  if (!backupCode) {
-    throw new Error("Invalid backup code");
+    }
+  })
+
+  if (backupCode) {
+    // Mark backup code as used
+    await prisma.backupCode.update({
+      where: { id: backupCode.id },
+      data: { used: true, usedAt: new Date() }
+    })
+    return true
   }
-  
-  await prisma.backupCode.update({
-    where: { id: backupCode.id },
-    data: { used: true },
-  });
-  
-  return true;
+
+  return false
 }
 ```
 
-## Security Considerations
+### 2FA Login Form
 
-1. **Secret Storage**
-   - Encrypt 2FA secrets
-   - Use secure database
-   - Implement proper access control
+```tsx
+// components/auth/two-factor-form.tsx
+"use client"
 
-2. **Backup Codes**
-   - Generate secure codes
-   - One-time use only
-   - Secure storage
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-3. **Rate Limiting**
-   - Limit verification attempts
-   - Implement cooldown periods
-   - Monitor for abuse
+interface TwoFactorFormProps {
+  email: string
+  password: string
+  onVerify: (code: string) => Promise<void>
+  onBack: () => void
+}
 
-## Best Practices
+export function TwoFactorForm({ email, password, onVerify, onBack }: TwoFactorFormProps) {
+  const [code, setCode] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
-1. **User Experience**
-   - Clear instructions
-   - Helpful error messages
-   - Easy recovery process
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!code) return
 
-2. **Security**
-   - Strong validation
-   - Secure storage
-   - Regular audits
+    setIsLoading(true)
+    setError("")
 
-3. **Maintenance**
-   - Regular code updates
-   - Security patches
-   - User support
+    try {
+      await onVerify(code)
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-## Next Steps
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Two-Factor Authentication</CardTitle>
+        <CardDescription>
+          Enter the 6-digit code from your authenticator app
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="code">Verification Code</Label>
+            <Input
+              id="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456"
+              maxLength={8}
+              className="text-center text-lg tracking-widest"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Or enter one of your backup codes
+            </p>
+          </div>
 
-1. Implement recovery process
-2. Add additional 2FA methods
-3. Enhance security features
-4. Improve user experience
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
 
-For more detailed information about specific features, refer to the relevant sections in this documentation. 
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onBack}>
+              Back
+            </Button>
+            <Button type="submit" disabled={isLoading || !code} className="flex-1">
+              {isLoading ? "Verifying..." : "Verify"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🔄 Backup Code Management
+
+### Regenerate Backup Codes
+
+```ts
+// server/actions/2fa.ts
+export async function regenerateBackupCodes() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id }
+  })
+
+  if (!user?.twoFactorEnabled) {
+    throw new Error("2FA is not enabled")
+  }
+
+  const newBackupCodes = generateBackupCodes()
+
+  await prisma.$transaction([
+    // Delete old backup codes
+    prisma.backupCode.deleteMany({
+      where: { userId: session.user.id }
+    }),
+    // Create new backup codes
+    prisma.backupCode.createMany({
+      data: newBackupCodes.map(code => ({
+        userId: session.user.id!,
+        code,
+      }))
+    })
+  ])
+
+  return { backupCodes: newBackupCodes }
+}
+```
+
+## ✅ Security Best Practices
+
+### Rate Limiting 2FA Attempts
+
+```ts
+// lib/rate-limit.ts
+export const twoFactorRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "5 m"), // 5 attempts per 5 minutes
+})
+
+// Usage in 2FA verification
+export async function verify2FACode(userId: string, code: string) {
+  const { success } = await twoFactorRateLimit.limit(userId)
+  
+  if (!success) {
+    throw new Error("Too many 2FA attempts. Please try again later.")
+  }
+  
+  // Continue with verification...
+}
+```
+
+### Secure Backup Code Storage
+
+```ts
+// Hash backup codes before storing
+import bcrypt from "bcryptjs"
+
+function generateBackupCodes(): string[] {
+  const codes: string[] = []
+  for (let i = 0; i < 8; i++) {
+    const code = Math.random().toString().slice(2, 10)
+    codes.push(code)
+  }
+  return codes
+}
+
+// Store hashed backup codes
+await prisma.backupCode.createMany({
+  data: backupCodes.map(code => ({
+    userId: session.user.id!,
+    code: await bcrypt.hash(code, 12), // Hash the backup code
+  }))
+})
+```
+
+## 🚨 Common Issues
+
+**❌ QR Code not scanning:**
+- Ensure the QR code is generated correctly
+- Check authenticator app compatibility
+- Provide manual entry option
+
+**❌ Time sync issues:**
+- Increase the verification window
+- Advise users to sync device time
+- Implement clock drift tolerance
+
+**❌ Backup codes not working:**
+- Verify backup codes are stored correctly
+- Check if codes have been used already
+- Ensure proper hashing/comparison
+
+## 🔄 Next Steps
+
+1. Set up [Session Management](/docs/auth/session-management)
+2. Implement [Auth Error Handling](/docs/auth/error-handling)
+3. Add [Account Recovery](/docs/auth/account-recovery)
+4. Configure [Security Monitoring](/docs/security)
+
+Your 2FA implementation is now secure and user-friendly! 🎉 

@@ -1,30 +1,56 @@
 ---
 title: Local Setup
-description: This guide will help you get the next-auth-starter project up and running on your local machine
-tags: [local-setup, installation]
+description: Step-by-step guide to clone, install, and run the next-auth-starter project on your local machine
+tags: [local-setup, installation, development]
 ---
 
 # 📦 Local Setup & Installation
+
 This guide will help you get the next-auth-starter project up and running on your local machine using Next.js, TypeScript, Bun, Prisma, and Supabase.
 
-## 1. Clone the Repository
+## 📋 Prerequisites
+
+Before getting started, make sure you have:
+
+- **Node.js 18+** or **Bun** installed
+- **Git** for cloning the repository
+- **Supabase account** for database hosting
+- **Google Cloud Console** account (for OAuth)
+- **Resend account** for email services
+
+## 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/akdevv/next-auth-starter.git
 cd next-auth-starter
 ```
 
-## 2. Install Dependencies
-We're using Bun as the package manager:
+## 2️⃣ Install Dependencies
+
+We recommend using Bun for faster package management:
 
 ```bash
+# Using Bun (recommended)
 bun install
+
+# Or using npm
+npm install
+
+# Or using yarn
+yarn install
 ```
 
-## 3. Set Up Environment Variables
-Create a .env file in the root of the project and add the following variables:
+## 3️⃣ Set Up Environment Variables
+
+Create a `.env` file in the root directory:
 
 ```bash
+cp .env.example .env
+```
+
+Fill in your environment variables (see [Environment Variables](/docs/getting-started/environment-variables) for details):
+
+```env
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 AUTH_SECRET="your-secret-key"
 GOOGLE_CLIENT_ID="your-google-client-id"
@@ -33,23 +59,90 @@ NEXT_PUBLIC_RESEND_API_KEY="your-resend-api-key"
 DATABASE_URL="your-supabase-db-url"
 ```
 
-## 4. Generate Prisma Client
+## 4️⃣ Database Setup
+
+Generate Prisma client and push schema to your database:
 
 ```bash
+# Generate Prisma client
 bun prisma generate
+
+# Push schema to database
 bun prisma db push
 
-(optional)
+# (Optional) Run migrations for production
 bun prisma migrate dev --name init
 ```
 
-## 5. Start the Development Server
+## 5️⃣ Start Development Server
 
 ```bash
+# Using Bun
 bun dev
+
+# Or using npm
+npm run dev
+
+# Or using yarn  
+yarn dev
 ```
-Visit http://localhost:3000 to see the app running.
 
-# ✅ You’re Ready!
-You can now start exploring or modifying the project. For feature-specific instructions, head to the relevant section in the [Docs](/docs).
+Visit [http://localhost:3000](http://localhost:3000) to see your app running! 🎉
 
+## 🔧 Development Commands
+
+Here are some useful commands for development:
+
+```bash
+# Start development server
+bun dev
+
+# Build for production
+bun build
+
+# Run linting
+bun lint
+
+# Format code
+bun format
+
+# Database commands
+bun prisma studio    # Open database browser
+bun prisma migrate   # Run migrations
+bun prisma reset     # Reset database
+```
+
+## ✅ Verification
+
+To verify everything is working correctly:
+
+1. **Homepage loads** at `http://localhost:3000`
+2. **Database connection** is established (check console for errors)
+3. **Authentication pages** are accessible at `/auth/login`
+4. **Email service** configuration (test with registration)
+
+## 🚨 Troubleshooting
+
+**Database connection issues:**
+- Verify your `DATABASE_URL` in `.env`
+- Check Supabase project is active
+- Run `bun prisma db push` again
+
+**Build errors:**
+- Clear `.next` folder: `rm -rf .next`
+- Reinstall dependencies: `rm -rf node_modules && bun install`
+
+**Port already in use:**
+- Change port: `bun dev --port 3001`
+- Or kill existing process: `lsof -ti:3000 | xargs kill`
+
+## 🎯 Next Steps
+
+Now that you're set up locally:
+
+1. Explore the [Project Structure](/docs/getting-started/project-structure)
+2. Learn about the [Tech Stack](/docs/getting-started/tech-stack)
+3. Set up [Authentication](/docs/auth) features
+4. Customize the UI and add your features
+
+Happy coding! 🚀 

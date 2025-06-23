@@ -1,0 +1,705 @@
+---
+title: Social Logins (Optional)
+description: Extending authentication with additional OAuth providers like GitHub, Discord, and more
+tags: [social-auth, oauth, github, discord, multiple-providers]
+---
+
+# 🌟 Social Logins (Optional)
+
+Extend your authentication system with multiple OAuth providers to give users more sign-in options.
+
+## 🎯 Overview
+
+Adding multiple social login options increases user convenience and can improve conversion rates. This guide covers setting up additional OAuth providers beyond Google.
+
+## 🚀 Supported Providers
+
+### Popular OAuth Providers
+
+```ts
+// lib/auth.ts - Multiple providers configuration
+import GoogleProvider from "next-auth/providers/google"
+import GitHubProvider from "next-auth/providers/github"
+import DiscordProvider from "next-auth/providers/discord"
+import TwitterProvider from "next-auth/providers/twitter"
+import FacebookProvider from "next-auth/providers/facebook"
+
+export const authConfig = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID!,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_CLIENT_ID!,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      version: "2.0",
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    }),
+  ]
+}
+```
+
+## 🔧 Provider Setup Guides
+
+### GitHub OAuth Setup
+
+**1. Create GitHub OAuth App:**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **"New OAuth App"**
+3. Fill in application details:
+   - **Application name**: "Your App Name"
+   - **Homepage URL**: `https://yourdomain.com`
+   - **Authorization callback URL**: `https://yourdomain.com/api/auth/callback/github`
+
+**2. Environment Variables:**
+```env
+# GitHub OAuth
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+```
+
+**3. Provider Configuration:**
+```ts
+GitHubProvider({
+  clientId: process.env.GITHUB_CLIENT_ID!,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+  authorization: {
+    params: {
+      scope: "read:user user:email",
+    },
+  },
+})
+```
+
+### Discord OAuth Setup
+
+**1. Create Discord Application:**
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **"New Application"**
+3. Go to **"OAuth2"** section
+4. Add redirect URL: `https://yourdomain.com/api/auth/callback/discord`
+
+**2. Environment Variables:**
+```env
+# Discord OAuth
+DISCORD_CLIENT_ID="your-discord-client-id"
+DISCORD_CLIENT_SECRET="your-discord-client-secret"
+```
+
+**3. Provider Configuration:**
+```ts
+DiscordProvider({
+  clientId: process.env.DISCORD_CLIENT_ID!,
+  clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+  authorization: {
+    params: {
+      scope: "identify email",
+    },
+  },
+})
+```
+
+### Twitter/X OAuth Setup
+
+**1. Create Twitter App:**
+1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal)
+2. Create a new project and app
+3. Set callback URL: `https://yourdomain.com/api/auth/callback/twitter`
+
+**2. Environment Variables:**
+```env
+# Twitter OAuth
+TWITTER_CLIENT_ID="your-twitter-client-id"
+TWITTER_CLIENT_SECRET="your-twitter-client-secret"
+```
+
+**3. Provider Configuration:**
+```ts
+TwitterProvider({
+  clientId: process.env.TWITTER_CLIENT_ID!,
+  clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+  version: "2.0",
+})
+```
+
+### Facebook OAuth Setup
+
+**1. Create Facebook App:**
+1. Go to [Facebook Developers](https://developers.facebook.com/)
+2. Create a new app
+3. Add Facebook Login product
+4. Set Valid OAuth Redirect URI: `https://yourdomain.com/api/auth/callback/facebook`
+
+**2. Environment Variables:**
+```env
+# Facebook OAuth
+FACEBOOK_CLIENT_ID="your-facebook-app-id"
+FACEBOOK_CLIENT_SECRET="your-facebook-app-secret"
+```
+
+**3. Provider Configuration:**
+```ts
+FacebookProvider({
+  clientId: process.env.FACEBOOK_CLIENT_ID!,
+  clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+})
+```
+
+## 🎨 UI Components
+
+### Social Login Buttons
+
+```tsx
+// components/auth/social-login-buttons.tsx
+"use client"
+
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { FaGoogle, FaGithub, FaDiscord, FaTwitter, FaFacebook } from "react-icons/fa"
+
+interface SocialLoginButtonsProps {
+  callbackUrl?: string
+  isLoading?: boolean
+}
+
+export function SocialLoginButtons({ 
+  callbackUrl = "/profile",
+  isLoading = false 
+}: SocialLoginButtonsProps) {
+  const socialProviders = [
+    {
+      id: "google",
+      name: "Google",
+      icon: FaGoogle,
+      bgColor: "bg-red-500 hover:bg-red-600",
+    },
+    {
+      id: "github",
+      name: "GitHub",
+      icon: FaGithub,
+      bgColor: "bg-gray-800 hover:bg-gray-900",
+    },
+    {
+      id: "discord",
+      name: "Discord",
+      icon: FaDiscord,
+      bgColor: "bg-indigo-500 hover:bg-indigo-600",
+    },
+    {
+      id: "twitter",
+      name: "Twitter",
+      icon: FaTwitter,
+      bgColor: "bg-blue-400 hover:bg-blue-500",
+    },
+    {
+      id: "facebook",
+      name: "Facebook",
+      icon: FaFacebook,
+      bgColor: "bg-blue-600 hover:bg-blue-700",
+    },
+  ]
+
+  const handleSocialSignIn = (providerId: string) => {
+    signIn(providerId, { callbackUrl })
+  }
+
+  return (
+    <div className="space-y-3">
+      {socialProviders.map((provider) => {
+        const IconComponent = provider.icon
+        return (
+          <Button
+            key={provider.id}
+            variant="outline"
+            className={`w-full ${provider.bgColor} text-white border-0`}
+            onClick={() => handleSocialSignIn(provider.id)}
+            disabled={isLoading}
+          >
+            <IconComponent className="mr-2 h-4 w-4" />
+            Continue with {provider.name}
+          </Button>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+### Compact Social Buttons (Icons Only)
+
+```tsx
+// components/auth/social-icons.tsx
+"use client"
+
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { FaGoogle, FaGithub, FaDiscord, FaTwitter, FaFacebook } from "react-icons/fa"
+
+export function SocialIcons({ callbackUrl = "/profile" }) {
+  const providers = [
+    { id: "google", icon: FaGoogle, label: "Google", color: "text-red-500" },
+    { id: "github", icon: FaGithub, label: "GitHub", color: "text-gray-700" },
+    { id: "discord", icon: FaDiscord, label: "Discord", color: "text-indigo-500" },
+    { id: "twitter", icon: FaTwitter, label: "Twitter", color: "text-blue-400" },
+    { id: "facebook", icon: FaFacebook, label: "Facebook", color: "text-blue-600" },
+  ]
+
+  return (
+    <div className="flex justify-center space-x-4">
+      {providers.map((provider) => {
+        const IconComponent = provider.icon
+        return (
+          <Button
+            key={provider.id}
+            variant="outline"
+            size="icon"
+            className="h-12 w-12"
+            onClick={() => signIn(provider.id, { callbackUrl })}
+            title={`Sign in with ${provider.label}`}
+          >
+            <IconComponent className={`h-5 w-5 ${provider.color}`} />
+          </Button>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+### Enhanced Login Form with Social Options
+
+```tsx
+// components/auth/complete-login-form.tsx
+"use client"
+
+import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { SocialLoginButtons } from "./social-login-buttons"
+import { CredentialsForm } from "./credentials-form"
+
+export function CompleteLoginForm() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
+        <CardDescription className="text-center">
+          Choose your preferred sign-in method
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Social Login Options */}
+        <SocialLoginButtons />
+
+        {/* Separator */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
+        {/* Email/Password Form */}
+        <CredentialsForm />
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🔄 Account Linking
+
+### Handle Multiple Providers for Same Email
+
+```ts
+// lib/auth.ts - Enhanced callbacks for account linking
+export const authConfig = {
+  providers: [
+    // ... your providers
+  ],
+  callbacks: {
+    async signIn({ user, account, profile }) {
+      if (!user.email) return false
+
+      try {
+        // Check if user exists with this email
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          include: { accounts: true }
+        })
+
+        if (existingUser) {
+          // Check if this provider is already linked
+          const existingAccount = existingUser.accounts.find(
+            acc => acc.provider === account?.provider
+          )
+
+          if (!existingAccount && account) {
+            // Link new provider to existing user
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                refresh_token: account.refresh_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              }
+            })
+          }
+          return true
+        }
+
+        // Create new user if doesn't exist
+        if (account) {
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              emailVerified: true, // OAuth emails are pre-verified
+            }
+          })
+
+          await prisma.account.create({
+            data: {
+              userId: newUser.id,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              refresh_token: account.refresh_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            }
+          })
+        }
+
+        return true
+      } catch (error) {
+        console.error("Sign in error:", error)
+        return false
+      }
+    },
+
+    async session({ session, token, user }) {
+      if (session.user?.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: session.user.email },
+          include: { accounts: true }
+        })
+
+        if (dbUser) {
+          session.user.id = dbUser.id
+          session.user.emailVerified = dbUser.emailVerified
+          session.user.linkedProviders = dbUser.accounts.map(acc => acc.provider)
+        }
+      }
+
+      return session
+    }
+  }
+}
+```
+
+### Account Linking UI
+
+```tsx
+// components/profile/linked-accounts.tsx
+"use client"
+
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { signIn } from "next-auth/react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { FaGoogle, FaGithub, FaDiscord, FaTwitter, FaFacebook } from "react-icons/fa"
+import { Link, Unlink } from "lucide-react"
+
+export function LinkedAccounts() {
+  const { data: session, update } = useSession()
+  const [linking, setLinking] = useState<string | null>(null)
+
+  const providers = [
+    { id: "google", name: "Google", icon: FaGoogle },
+    { id: "github", name: "GitHub", icon: FaGithub },
+    { id: "discord", name: "Discord", icon: FaDiscord },
+    { id: "twitter", name: "Twitter", icon: FaTwitter },
+    { id: "facebook", name: "Facebook", icon: FaFacebook },
+  ]
+
+  const linkedProviders = session?.user?.linkedProviders || []
+
+  const handleLinkAccount = async (providerId: string) => {
+    setLinking(providerId)
+    try {
+      await signIn(providerId, { 
+        callbackUrl: "/profile?linked=true",
+        redirect: true 
+      })
+    } catch (error) {
+      console.error("Failed to link account:", error)
+    } finally {
+      setLinking(null)
+    }
+  }
+
+  const handleUnlinkAccount = async (providerId: string) => {
+    // Implement account unlinking
+    try {
+      const response = await fetch(`/api/auth/unlink/${providerId}`, {
+        method: "DELETE",
+      })
+      
+      if (response.ok) {
+        await update() // Refresh session
+      }
+    } catch (error) {
+      console.error("Failed to unlink account:", error)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Link className="h-5 w-5" />
+          Linked Accounts
+        </CardTitle>
+        <CardDescription>
+          Connect multiple accounts for easier sign-in
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {providers.map((provider) => {
+          const IconComponent = provider.icon
+          const isLinked = linkedProviders.includes(provider.id)
+          const isLinking = linking === provider.id
+
+          return (
+            <div key={provider.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <IconComponent className="h-5 w-5" />
+                <span className="font-medium">{provider.name}</span>
+                {isLinked && (
+                  <Badge variant="secondary">Connected</Badge>
+                )}
+              </div>
+              
+              <Button
+                variant={isLinked ? "outline" : "default"}
+                size="sm"
+                onClick={() => 
+                  isLinked 
+                    ? handleUnlinkAccount(provider.id)
+                    : handleLinkAccount(provider.id)
+                }
+                disabled={isLinking}
+              >
+                {isLinking ? (
+                  "Connecting..."
+                ) : isLinked ? (
+                  <>
+                    <Unlink className="h-3 w-3 mr-1" />
+                    Disconnect
+                  </>
+                ) : (
+                  <>
+                    <Link className="h-3 w-3 mr-1" />
+                    Connect
+                  </>
+                )}
+              </Button>
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🔒 Security Considerations
+
+### Provider-Specific Security
+
+```ts
+// lib/provider-security.ts
+export const providerSecurityConfig = {
+  google: {
+    additionalScopes: ["openid", "email", "profile"],
+    trustEmail: true, // Google emails are verified
+  },
+  github: {
+    additionalScopes: ["read:user", "user:email"],
+    trustEmail: false, // GitHub allows unverified emails
+  },
+  discord: {
+    additionalScopes: ["identify", "email"],
+    trustEmail: true, // Discord emails are verified
+  },
+  twitter: {
+    additionalScopes: ["tweet.read", "users.read"],
+    trustEmail: false, // Twitter emails may not be verified
+  },
+  facebook: {
+    additionalScopes: ["email", "public_profile"],
+    trustEmail: true, // Facebook emails are verified
+  },
+}
+
+// Enhanced provider configuration with security
+export function createSecureProvider(providerId: string, config: any) {
+  const securityConfig = providerSecurityConfig[providerId]
+  
+  return {
+    ...config,
+    authorization: {
+      params: {
+        scope: securityConfig.additionalScopes.join(" "),
+        ...config.authorization?.params,
+      },
+    },
+  }
+}
+```
+
+### Account Security Validation
+
+```ts
+// server/actions/account-security.ts
+export async function validateAccountSecurity(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { accounts: true }
+  })
+
+  if (!user) throw new Error("User not found")
+
+  const securityChecks = {
+    hasEmailVerified: user.emailVerified,
+    hasMultipleProviders: user.accounts.length > 1,
+    hasTwoFactorEnabled: user.twoFactorEnabled,
+    hasSecureProviders: user.accounts.some(acc => 
+      ["google", "discord"].includes(acc.provider)
+    ),
+  }
+
+  const securityScore = Object.values(securityChecks).filter(Boolean).length
+  
+  return {
+    ...securityChecks,
+    securityScore,
+    recommendations: getSecurityRecommendations(securityChecks),
+  }
+}
+
+function getSecurityRecommendations(checks: any): string[] {
+  const recommendations = []
+  
+  if (!checks.hasEmailVerified) {
+    recommendations.push("Verify your email address")
+  }
+  
+  if (!checks.hasTwoFactorEnabled) {
+    recommendations.push("Enable two-factor authentication")
+  }
+  
+  if (!checks.hasMultipleProviders) {
+    recommendations.push("Link additional accounts for backup access")
+  }
+  
+  return recommendations
+}
+```
+
+## ✅ Best Practices
+
+### Configuration Checklist
+
+- [ ] **Environment variables** properly set for each provider
+- [ ] **Redirect URIs** configured correctly
+- [ ] **Scopes** limited to necessary permissions
+- [ ] **Error handling** for OAuth failures
+- [ ] **Account linking** logic implemented
+- [ ] **Security validation** for linked accounts
+
+### User Experience
+
+- [ ] **Clear provider options** with recognizable icons
+- [ ] **Consistent styling** across all providers
+- [ ] **Loading states** during OAuth flow
+- [ ] **Error feedback** for failed attempts
+- [ ] **Account management** interface
+- [ ] **Security recommendations** display
+
+## 🚨 Common Issues
+
+**❌ OAuth callback errors:**
+- Verify redirect URIs match exactly
+- Check environment variables are correct
+- Ensure HTTPS in production
+
+**❌ Account linking conflicts:**
+- Handle email conflicts gracefully
+- Implement proper account merging
+- Validate provider data consistency
+
+**❌ Provider-specific issues:**
+- Review provider documentation
+- Test with different account types
+- Handle edge cases (unverified emails, etc.)
+
+## 🔧 Testing Multiple Providers
+
+```ts
+// test/auth-providers.test.ts
+import { testAuthFlow } from "./helpers/auth-test-helpers"
+
+describe("Social Login Providers", () => {
+  const providers = ["google", "github", "discord"]
+  
+  providers.forEach(provider => {
+    test(`${provider} OAuth flow works`, async () => {
+      const result = await testAuthFlow(provider, {
+        email: `test@${provider}.com`,
+        name: "Test User",
+      })
+      
+      expect(result.success).toBe(true)
+      expect(result.user.provider).toBe(provider)
+    })
+  })
+})
+```
+
+## 🔄 Next Steps
+
+1. Monitor [Provider Analytics](/docs/analytics/providers)
+2. Set up [Security Alerts](/docs/security/alerts)
+3. Implement [Advanced Account Management](/docs/auth/advanced)
+4. Add [Custom OAuth Providers](/docs/auth/custom-providers)
+
+Your social login system is now comprehensive and secure! 🌟🔐 

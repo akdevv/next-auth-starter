@@ -49,22 +49,26 @@ export default function CommandSearch({
 	return (
 		<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
 			<CommandInput placeholder="Type a command or search..." />
-			<CommandEmpty>No results found.</CommandEmpty>
-			{docLinks.map((link) => (
-				<CommandGroup key={link.href} heading={link.label}>
-					{link.subsections?.map((subsection) => (
-						<CommandItem
-							key={subsection.href}
-							onSelect={() =>
-								runCommand(() => router.push(subsection.href))
-							}
-						>
-							<BsFileText className="mr-2 h-4 w-4 hover:text-foreground" />
-							<span>{subsection.label}</span>
-						</CommandItem>
-					))}
-				</CommandGroup>
-			))}
+			<div className="max-h-[60vh] overflow-y-auto">
+				<CommandEmpty>No results found.</CommandEmpty>
+				{docLinks.map((link) => (
+					<CommandGroup key={link.href} heading={link.label}>
+						{link.subsections?.map((subsection) => (
+							<CommandItem
+								key={subsection.href}
+								onSelect={() =>
+									runCommand(() =>
+										router.push(subsection.href)
+									)
+								}
+							>
+								<BsFileText className="mr-2 h-4 w-4 hover:text-foreground" />
+								<span>{subsection.label}</span>
+							</CommandItem>
+						))}
+					</CommandGroup>
+				))}
+			</div>
 		</CommandDialog>
 	);
 }

@@ -1,348 +1,712 @@
 ---
-title: 'Session Management'
-description: 'Learn how to implement and manage user sessions in your Next.js application'
+title: Session & Device Management
+description: Track active sessions and devices, manage session data, and provide users control over their sessions
+tags: [sessions, devices, security, management]
 ---
 
-# Session Management
+# 📱 Session & Device Management
 
-## Overview
+Implement comprehensive session and device tracking to give users visibility and control over their account access.
 
-Session management is crucial for maintaining user authentication state and security. This guide covers implementation using NextAuth.js session handling.
+## 🎯 Overview
 
-## Implementation
+Session and device management allows users to see all active sessions, manage their devices, and revoke access when needed for enhanced security.
 
-### 1. Session Configuration
+## 🗄️ Database Schema
 
-```typescript
-// lib/auth.ts
-import { NextAuthOptions } from "next-auth";
+Extend your database to track sessions and devices:
 
-export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
-  },
-  callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        // Add custom session data
-        session.user.role = token.role as string;
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        // Add custom JWT data
-        token.role = user.role;
-      }
-      return token;
-    },
-  },
-};
-```
+```prisma
+// prisma/schema.prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  sessions      Session[]
+}
 
-### 2. Session Provider
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  lastActive   DateTime @default(now())
+  
+  // Device and location information
+  deviceName   String?
+  deviceType   String?   // "mobile", "desktop", "tablet"
+  browser      String?
+  os           String?
+  ipAddress    String?
+  country      String?
+  city         String?
+  isCurrent    Boolean  @default(false)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([expires])
+}
 
-```typescript
-// app/providers.tsx
-import { SessionProvider } from "next-auth/react";
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <SessionProvider>
-      {children}
-    </SessionProvider>
-  );
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  success   Boolean
+  ipAddress String?
+  userAgent String?
+  country   String?
+  city      String?
+  reason    String?  // "password", "2fa", "oauth", etc.
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt])
 }
 ```
 
-### 3. Session Hooks
+Update your database:
 
-```typescript
-// hooks/use-session.ts
-import { useSession } from "next-auth/react";
+```bash
+bun prisma db push
+```
 
-export function useAuth() {
-  const { data: session, status } = useSession();
+## 🔧 Session Tracking Implementation
+
+### Enhanced Session Creation
+
+```ts
+// lib/session-helper.ts
+import { headers } from "next/headers"
+import { UAParser } from "ua-parser-js"
+import { prisma } from "@/lib/prisma"
+
+interface DeviceInfo {
+  deviceName: string
+  deviceType: string
+  browser: string
+  os: string
+  ipAddress: string
+}
+
+export async function getDeviceInfo(): Promise<DeviceInfo> {
+  const headersList = headers()
+  const userAgent = headersList.get("user-agent") || ""
+  const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1"
+  
+  const parser = new UAParser(userAgent)
+  const device = parser.getDevice()
+  const browser = parser.getBrowser()
+  const os = parser.getOS()
+  
+  // Determine device type
+  let deviceType = "desktop"
+  if (device.type === "mobile") deviceType = "mobile"
+  else if (device.type === "tablet") deviceType = "tablet"
+  
+  // Create device name
+  const deviceName = `${browser.name || "Unknown Browser"} on ${os.name || "Unknown OS"}`
   
   return {
-    user: session?.user,
-    isAuthenticated: status === "authenticated",
-    isLoading: status === "loading",
-  };
+    deviceName,
+    deviceType,
+    browser: browser.name || "Unknown",
+    os: os.name || "Unknown",
+    ipAddress: ipAddress.split(",")[0].trim(), // Get first IP if multiple
+  }
 }
-```
 
-## Session Protection
-
-### 1. Middleware Protection
-
-```typescript
-// middleware.ts
-import { withAuth } from "next-auth/middleware";
-
-export default withAuth({
-  callbacks: {
-    authorized: ({ token }) => !!token,
-  },
-});
-
-export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/profile/:path*",
-    "/settings/:path*",
-  ],
-};
-```
-
-### 2. Route Protection
-
-```typescript
-// components/auth/protected-route.tsx
-import { useAuth } from "@/hooks/use-session";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+export async function createSession(userId: string, sessionToken: string, expires: Date) {
+  const deviceInfo = await getDeviceInfo()
   
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+  // Mark all other sessions as not current
+  await prisma.session.updateMany({
+    where: { userId },
+    data: { isCurrent: false }
+  })
+  
+  // Create new session with device info
+  const session = await prisma.session.create({
+    data: {
+      userId,
+      sessionToken,
+      expires,
+      isCurrent: true,
+      ...deviceInfo,
     }
-  }, [isLoading, isAuthenticated, router]);
+  })
   
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  // Log successful login
+  await prisma.loginHistory.create({
+    data: {
+      userId,
+      success: true,
+      ipAddress: deviceInfo.ipAddress,
+      userAgent: `${deviceInfo.browser} on ${deviceInfo.os}`,
+      reason: "password", // or "oauth", "2fa", etc.
+    }
+  })
   
-  return isAuthenticated ? <>{children}</> : null;
+  return session
+}
+
+export async function updateSessionActivity(sessionToken: string) {
+  await prisma.session.update({
+    where: { sessionToken },
+    data: { lastActive: new Date() }
+  })
 }
 ```
 
-## Session Data
+### Session Management Actions
 
-### 1. Custom Session Type
+```ts
+// server/actions/session.ts
+"use server"
 
-```typescript
-// types/next-auth.d.ts
-import "next-auth";
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { revalidatePath } from "next/cache"
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-      role: string;
-      // Add custom fields
-    };
-  }
-  
-  interface User {
-    role: string;
-    // Add custom fields
-  }
-}
-```
-
-### 2. Session Storage
-
-```typescript
-// lib/session.ts
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-
-export async function getSession() {
-  return await getServerSession(authOptions);
-}
-
-export async function getCurrentUser() {
-  const session = await getSession();
-  return session?.user;
-}
-```
-
-## Session Actions
-
-### 1. Sign Out
-
-```typescript
-// components/auth/sign-out-button.tsx
-import { signOut } from "next-auth/react";
-
-export function SignOutButton() {
-  const handleSignOut = async () => {
-    await signOut({
-      callbackUrl: "/login",
-    });
-  };
-  
-  return (
-    <button onClick={handleSignOut}>
-      Sign Out
-    </button>
-  );
-}
-```
-
-### 2. Session Update
-
-```typescript
-// lib/session.ts
-export async function updateSession(data: Partial<Session>) {
-  const session = await getSession();
-  
-  if (!session) {
-    throw new Error("No active session");
-  }
-  
-  // Update session data
-  Object.assign(session, data);
-  
-  // Trigger session update
-  await fetch("/api/auth/session", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-```
-
-## Security Features
-
-### 1. Session Expiration
-
-```typescript
-// lib/auth.ts
-export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
-  },
-  // Additional configuration
-};
-```
-
-### 2. Session Validation
-
-```typescript
-// lib/session.ts
-export async function validateSession(session: Session) {
+export async function getUserSessions() {
+  const session = await auth()
   if (!session?.user?.id) {
-    throw new Error("Invalid session");
+    throw new Error("Unauthorized")
   }
-  
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-  });
-  
-  if (!user) {
-    throw new Error("User not found");
+
+  const sessions = await prisma.session.findMany({
+    where: { 
+      userId: session.user.id,
+      expires: { gt: new Date() } // Only active sessions
+    },
+    orderBy: { lastActive: "desc" }
+  })
+
+  return sessions.map(session => ({
+    id: session.id,
+    deviceName: session.deviceName,
+    deviceType: session.deviceType,
+    browser: session.browser,
+    os: session.os,
+    ipAddress: session.ipAddress,
+    country: session.country,
+    city: session.city,
+    isCurrent: session.isCurrent,
+    createdAt: session.createdAt,
+    lastActive: session.lastActive,
+  }))
+}
+
+export async function revokeSession(sessionId: string) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
   }
-  
-  return user;
+
+  const sessionToRevoke = await prisma.session.findFirst({
+    where: { 
+      id: sessionId,
+      userId: session.user.id
+    }
+  })
+
+  if (!sessionToRevoke) {
+    throw new Error("Session not found")
+  }
+
+  if (sessionToRevoke.isCurrent) {
+    throw new Error("Cannot revoke current session")
+  }
+
+  await prisma.session.delete({
+    where: { id: sessionId }
+  })
+
+  revalidatePath("/profile")
+  return { success: true }
+}
+
+export async function revokeAllOtherSessions() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const deletedCount = await prisma.session.deleteMany({
+    where: {
+      userId: session.user.id,
+      isCurrent: false,
+    }
+  })
+
+  revalidatePath("/profile")
+  return { 
+    success: true, 
+    revokedCount: deletedCount.count 
+  }
+}
+
+export async function getLoginHistory(limit = 10) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const history = await prisma.loginHistory.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  })
+
+  return history
 }
 ```
 
-## Best Practices
+## 🎨 Frontend Components
 
-### 1. Session Security
+### Sessions Management Component
 
-- Use secure session storage
-- Implement session expiration
-- Validate session data
-- Handle session errors
+```tsx
+// components/profile/sessions-section.tsx
+"use client"
 
-### 2. Performance
+import { useState, useEffect } from "react"
+import { getUserSessions, revokeSession, revokeAllOtherSessions } from "@/server/actions/session"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { 
+  Smartphone, 
+  Monitor, 
+  Tablet, 
+  MapPin, 
+  Clock,
+  LogOut,
+  Shield
+} from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 
-- Minimize session data
-- Use efficient storage
-- Implement caching
-- Optimize updates
+interface Session {
+  id: string
+  deviceName: string
+  deviceType: string
+  browser: string
+  os: string
+  ipAddress: string
+  country?: string
+  city?: string
+  isCurrent: boolean
+  createdAt: Date
+  lastActive: Date
+}
 
-### 3. User Experience
+export function SessionsSection() {
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [revoking, setRevoking] = useState<string | null>(null)
 
-- Handle loading states
-- Provide clear feedback
-- Implement smooth transitions
-- Handle edge cases
+  useEffect(() => {
+    loadSessions()
+  }, [])
 
-## Error Handling
-
-### 1. Session Errors
-
-```typescript
-// lib/session.ts
-export async function handleSessionError(error: unknown) {
-  if (error instanceof Error) {
-    if (error.message === "Invalid session") {
-      // Handle invalid session
-      await signOut();
-    } else if (error.message === "User not found") {
-      // Handle missing user
-      await signOut();
+  const loadSessions = async () => {
+    try {
+      const data = await getUserSessions()
+      setSessions(data)
+    } catch (error) {
+      console.error("Failed to load sessions:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
-  
-  // Log error
-  console.error("Session error:", error);
-}
-```
 
-### 2. Error Boundaries
-
-```typescript
-// components/error-boundary.tsx
-import { Component, ErrorInfo, ReactNode } from "react";
-
-interface Props {
-  children: ReactNode;
-}
-
-interface State {
-  hasError: boolean;
-}
-
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-  };
-  
-  public static getDerivedStateFromError(): State {
-    return { hasError: true };
-  }
-  
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Session error:", error, errorInfo);
-  }
-  
-  public render() {
-    if (this.state.hasError) {
-      return (
-        <div>
-          <h1>Something went wrong</h1>
-          <button onClick={() => this.setState({ hasError: false })}>
-            Try again
-          </button>
-        </div>
-      );
+  const handleRevokeSession = async (sessionId: string) => {
+    setRevoking(sessionId)
+    try {
+      await revokeSession(sessionId)
+      setSessions(sessions.filter(s => s.id !== sessionId))
+    } catch (error) {
+      console.error("Failed to revoke session:", error)
+    } finally {
+      setRevoking(null)
     }
-    
-    return this.props.children;
+  }
+
+  const handleRevokeAllOthers = async () => {
+    setRevoking("all")
+    try {
+      await revokeAllOtherSessions()
+      setSessions(sessions.filter(s => s.isCurrent))
+    } catch (error) {
+      console.error("Failed to revoke sessions:", error)
+    } finally {
+      setRevoking(null)
+    }
+  }
+
+  const getDeviceIcon = (deviceType: string) => {
+    switch (deviceType) {
+      case "mobile":
+        return <Smartphone className="h-5 w-5" />
+      case "tablet":
+        return <Tablet className="h-5 w-5" />
+      default:
+        return <Monitor className="h-5 w-5" />
+    }
+  }
+
+  const otherSessions = sessions.filter(s => !s.isCurrent)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Active Sessions
+        </CardTitle>
+        <CardDescription>
+          Manage your active sessions and devices
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Current Session */}
+        {sessions.find(s => s.isCurrent) && (
+          <div className="space-y-2">
+            <h4 className="font-medium">Current Session</h4>
+            {(() => {
+              const currentSession = sessions.find(s => s.isCurrent)!
+              return (
+                <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      {getDeviceIcon(currentSession.deviceType)}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{currentSession.deviceName}</span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            Current
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {currentSession.ipAddress}
+                            {currentSession.city && ` • ${currentSession.city}`}
+                            {currentSession.country && `, ${currentSession.country}`}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="h-3 w-3" />
+                            Active {formatDistanceToNow(currentSession.lastActive, { addSuffix: true })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* Other Sessions */}
+        {otherSessions.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">Other Sessions ({otherSessions.length})</h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRevokeAllOthers}
+                disabled={revoking === "all"}
+              >
+                {revoking === "all" ? "Revoking..." : "Revoke All"}
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {otherSessions.map((session) => (
+                <div key={session.id} className="p-4 border rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      {getDeviceIcon(session.deviceType)}
+                      <div className="space-y-1">
+                        <div className="font-medium">{session.deviceName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {session.ipAddress}
+                            {session.city && ` • ${session.city}`}
+                            {session.country && `, ${session.country}`}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="h-3 w-3" />
+                            Last active {formatDistanceToNow(session.lastActive, { addSuffix: true })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRevokeSession(session.id)}
+                      disabled={revoking === session.id}
+                    >
+                      {revoking === session.id ? (
+                        "Revoking..."
+                      ) : (
+                        <>
+                          <LogOut className="h-3 w-3 mr-1" />
+                          Revoke
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sessions.length === 0 && !isLoading && (
+          <div className="text-center py-8 text-muted-foreground">
+            No active sessions found
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading sessions...
+          </div>
+        )}
+
+        <Alert>
+          <AlertDescription>
+            Revoking a session will sign out that device immediately. If you notice any suspicious activity, revoke all sessions and change your password.
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+### Login History Component
+
+```tsx
+// components/profile/login-history.tsx
+"use client"
+
+import { useState, useEffect } from "react"
+import { getLoginHistory } from "@/server/actions/session"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Clock, MapPin, CheckCircle, XCircle } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+
+interface LoginAttempt {
+  id: string
+  success: boolean
+  ipAddress?: string
+  userAgent?: string
+  country?: string
+  city?: string
+  reason?: string
+  createdAt: Date
+}
+
+export function LoginHistory() {
+  const [history, setHistory] = useState<LoginAttempt[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadHistory()
+  }, [])
+
+  const loadHistory = async () => {
+    try {
+      const data = await getLoginHistory(20)
+      setHistory(data)
+    } catch (error) {
+      console.error("Failed to load login history:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          Login History
+        </CardTitle>
+        <CardDescription>
+          Recent login attempts and activity
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading login history...
+          </div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No login history found
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {history.map((attempt) => (
+              <div key={attempt.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                <div className="flex-shrink-0 mt-0.5">
+                  {attempt.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+                
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {attempt.success ? "Successful login" : "Failed login attempt"}
+                    </span>
+                    <Badge variant={attempt.success ? "default" : "destructive"}>
+                      {attempt.reason || "Unknown"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {attempt.ipAddress}
+                      {attempt.city && ` • ${attempt.city}`}
+                      {attempt.country && `, ${attempt.country}`}
+                    </div>
+                    
+                    {attempt.userAgent && (
+                      <div className="mt-1">{attempt.userAgent}</div>
+                    )}
+                    
+                    <div className="mt-1">
+                      {formatDistanceToNow(attempt.createdAt, { addSuffix: true })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🔒 Security Features
+
+### Automatic Session Cleanup
+
+```ts
+// lib/session-cleanup.ts
+import { prisma } from "@/lib/prisma"
+
+export async function cleanupExpiredSessions() {
+  const result = await prisma.session.deleteMany({
+    where: {
+      expires: {
+        lt: new Date()
+      }
+    }
+  })
+  
+  console.log(`Cleaned up ${result.count} expired sessions`)
+  return result.count
+}
+
+// Run cleanup job (can be scheduled with cron)
+export async function scheduleSessionCleanup() {
+  setInterval(async () => {
+    await cleanupExpiredSessions()
+  }, 60 * 60 * 1000) // Run every hour
+}
+```
+
+### IP-based Security
+
+```ts
+// lib/security-monitor.ts
+export async function detectSuspiciousActivity(userId: string) {
+  // Check for logins from multiple countries in short time
+  const recentLogins = await prisma.loginHistory.findMany({
+    where: {
+      userId,
+      success: true,
+      createdAt: {
+        gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+      }
+    },
+    select: { country: true, ipAddress: true }
+  })
+
+  const uniqueCountries = new Set(recentLogins.map(l => l.country).filter(Boolean))
+  const uniqueIPs = new Set(recentLogins.map(l => l.ipAddress).filter(Boolean))
+
+  return {
+    multipleCountries: uniqueCountries.size > 2,
+    multipleIPs: uniqueIPs.size > 5,
+    riskScore: (uniqueCountries.size * 2) + uniqueIPs.size
   }
 }
 ```
 
-## Next Steps
+## ✅ Best Practices
 
-1. Implement session persistence
-2. Add session analytics
-3. Enhance security features
-4. Improve user experience
+### Security Checklist
 
-For more detailed information about specific features, refer to the relevant sections in this documentation. 
+- [ ] **Session token rotation** on each login
+- [ ] **Device fingerprinting** for enhanced security
+- [ ] **IP-based monitoring** for suspicious activity
+- [ ] **Automatic cleanup** of expired sessions
+- [ ] **Rate limiting** on session creation
+- [ ] **Geolocation tracking** for security alerts
+- [ ] **Session timeout** configuration
+
+### User Experience
+
+- [ ] **Clear device identification** in session list
+- [ ] **Current session** clearly marked
+- [ ] **Bulk revocation** options
+- [ ] **Login history** with details
+- [ ] **Security alerts** for new device logins
+- [ ] **Mobile-friendly** session management
+
+## 🚨 Common Issues
+
+**❌ Sessions not updating:**
+- Check middleware configuration
+- Verify session token updates
+- Ensure database writes are successful
+
+**❌ Device detection inaccurate:**
+- Update user-agent parsing library
+- Add fallbacks for unknown devices
+- Consider device registration flow
+
+**❌ Performance issues with many sessions:**
+- Implement session pagination
+- Add database indexes
+- Consider session archiving
+
+## 🔄 Next Steps
+
+1. Set up [Auth Error Handling](/docs/auth/error-handling)
+2. Implement [Security Monitoring](/docs/monitoring)
+3. Add [Social Logins](/docs/auth/social-logins)
+4. Configure [Account Recovery](/docs/auth/account-recovery)
+
+Your session and device management system is now comprehensive and secure! 📱🔒 

@@ -1,0 +1,683 @@
+---
+title: Auth Error Handling
+description: Handle authentication failures and common auth-related issues with proper error management
+tags: [error-handling, debugging, troubleshooting, auth-errors]
+---
+
+# 🚨 Authentication Error Handling
+
+Implement robust error handling for authentication flows to provide better user experience and easier debugging.
+
+## 🎯 Overview
+
+Proper error handling in authentication is crucial for security, user experience, and system reliability. This guide covers common errors and how to handle them gracefully.
+
+## 🔧 Error Types & Handling
+
+### Authentication Errors
+
+```ts
+// lib/auth-errors.ts
+export enum AuthErrorType {
+  INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
+  EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED",
+  ACCOUNT_LOCKED = "ACCOUNT_LOCKED",
+  TWO_FACTOR_REQUIRED = "TWO_FACTOR_REQUIRED",
+  SESSION_EXPIRED = "SESSION_EXPIRED",
+  RATE_LIMITED = "RATE_LIMITED",
+  OAUTH_ERROR = "OAUTH_ERROR",
+  NETWORK_ERROR = "NETWORK_ERROR",
+}
+
+export class AuthError extends Error {
+  constructor(
+    public type: AuthErrorType,
+    message: string,
+    public code?: string,
+    public details?: any
+  ) {
+    super(message)
+    this.name = "AuthError"
+  }
+}
+
+export const AUTH_ERROR_MESSAGES = {
+  [AuthErrorType.INVALID_CREDENTIALS]: "Invalid email or password",
+  [AuthErrorType.EMAIL_NOT_VERIFIED]: "Please verify your email address",
+  [AuthErrorType.ACCOUNT_LOCKED]: "Account temporarily locked due to too many failed attempts",
+  [AuthErrorType.TWO_FACTOR_REQUIRED]: "Two-factor authentication required",
+  [AuthErrorType.SESSION_EXPIRED]: "Your session has expired. Please sign in again",
+  [AuthErrorType.RATE_LIMITED]: "Too many attempts. Please try again later",
+  [AuthErrorType.OAUTH_ERROR]: "Authentication provider error",
+  [AuthErrorType.NETWORK_ERROR]: "Network error. Please check your connection",
+}
+```
+
+### Global Error Handler
+
+```ts
+// lib/error-handler.ts
+import { AuthError, AuthErrorType, AUTH_ERROR_MESSAGES } from "./auth-errors"
+
+export function handleAuthError(error: unknown): {
+  message: string
+  type: AuthErrorType
+  action?: string
+} {
+  // Handle known AuthError instances
+  if (error instanceof AuthError) {
+    return {
+      message: AUTH_ERROR_MESSAGES[error.type] || error.message,
+      type: error.type,
+      action: getRecommendedAction(error.type),
+    }
+  }
+
+  // Handle NextAuth errors
+  if (error instanceof Error) {
+    if (error.message.includes("CredentialsSignin")) {
+      return {
+        message: AUTH_ERROR_MESSAGES[AuthErrorType.INVALID_CREDENTIALS],
+        type: AuthErrorType.INVALID_CREDENTIALS,
+        action: "check_credentials",
+      }
+    }
+
+    if (error.message.includes("OAuthAccountNotLinked")) {
+      return {
+        message: "An account with this email already exists with a different sign-in method",
+        type: AuthErrorType.OAUTH_ERROR,
+        action: "try_different_method",
+      }
+    }
+
+    if (error.message.includes("2FA_REQUIRED")) {
+      return {
+        message: AUTH_ERROR_MESSAGES[AuthErrorType.TWO_FACTOR_REQUIRED],
+        type: AuthErrorType.TWO_FACTOR_REQUIRED,
+        action: "provide_2fa",
+      }
+    }
+  }
+
+  // Handle network errors
+  if (error instanceof TypeError && error.message.includes("fetch")) {
+    return {
+      message: AUTH_ERROR_MESSAGES[AuthErrorType.NETWORK_ERROR],
+      type: AuthErrorType.NETWORK_ERROR,
+      action: "check_connection",
+    }
+  }
+
+  // Default error
+  return {
+    message: "An unexpected error occurred. Please try again.",
+    type: AuthErrorType.NETWORK_ERROR,
+    action: "retry",
+  }
+}
+
+function getRecommendedAction(errorType: AuthErrorType): string {
+  switch (errorType) {
+    case AuthErrorType.INVALID_CREDENTIALS:
+      return "check_credentials"
+    case AuthErrorType.EMAIL_NOT_VERIFIED:
+      return "verify_email"
+    case AuthErrorType.ACCOUNT_LOCKED:
+      return "wait_or_contact_support"
+    case AuthErrorType.TWO_FACTOR_REQUIRED:
+      return "provide_2fa"
+    case AuthErrorType.SESSION_EXPIRED:
+      return "sign_in_again"
+    case AuthErrorType.RATE_LIMITED:
+      return "wait_and_retry"
+    case AuthErrorType.OAUTH_ERROR:
+      return "try_different_method"
+    default:
+      return "retry"
+  }
+}
+```
+
+## 🎨 Error Display Components
+
+### Error Alert Component
+
+```tsx
+// components/auth/error-alert.tsx
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { 
+  AlertTriangle, 
+  Mail, 
+  RefreshCw, 
+  Clock,
+  Shield,
+  Wifi
+} from "lucide-react"
+import { AuthErrorType } from "@/lib/auth-errors"
+
+interface ErrorAlertProps {
+  error: {
+    message: string
+    type: AuthErrorType
+    action?: string
+  }
+  onRetry?: () => void
+  onVerifyEmail?: () => void
+  onContactSupport?: () => void
+}
+
+export function ErrorAlert({ 
+  error, 
+  onRetry, 
+  onVerifyEmail, 
+  onContactSupport 
+}: ErrorAlertProps) {
+  const getIcon = () => {
+    switch (error.type) {
+      case AuthErrorType.EMAIL_NOT_VERIFIED:
+        return <Mail className="h-4 w-4" />
+      case AuthErrorType.TWO_FACTOR_REQUIRED:
+        return <Shield className="h-4 w-4" />
+      case AuthErrorType.RATE_LIMITED:
+        return <Clock className="h-4 w-4" />
+      case AuthErrorType.NETWORK_ERROR:
+        return <Wifi className="h-4 w-4" />
+      default:
+        return <AlertTriangle className="h-4 w-4" />
+    }
+  }
+
+  const getActionButton = () => {
+    switch (error.action) {
+      case "verify_email":
+        return onVerifyEmail ? (
+          <Button variant="outline" size="sm" onClick={onVerifyEmail}>
+            <Mail className="h-3 w-3 mr-1" />
+            Resend Verification
+          </Button>
+        ) : null
+
+      case "retry":
+        return onRetry ? (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Try Again
+          </Button>
+        ) : null
+
+      case "wait_or_contact_support":
+        return onContactSupport ? (
+          <Button variant="outline" size="sm" onClick={onContactSupport}>
+            Contact Support
+          </Button>
+        ) : null
+
+      default:
+        return null
+    }
+  }
+
+  const variant = error.type === AuthErrorType.RATE_LIMITED ? "default" : "destructive"
+
+  return (
+    <Alert variant={variant}>
+      {getIcon()}
+      <AlertDescription className="flex items-center justify-between">
+        <span>{error.message}</span>
+        {getActionButton()}
+      </AlertDescription>
+    </Alert>
+  )
+}
+```
+
+### Enhanced Login Form with Error Handling
+
+```tsx
+// components/auth/enhanced-login-form.tsx
+"use client"
+
+import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ErrorAlert } from "./error-alert"
+import { TwoFactorForm } from "./two-factor-form"
+import { handleAuthError } from "@/lib/error-handler"
+import { AuthErrorType } from "@/lib/auth-errors"
+
+export function EnhancedLoginForm() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<any>(null)
+  const [needsTwoFactor, setNeedsTwoFactor] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        const errorInfo = handleAuthError(new Error(result.error))
+        
+        if (errorInfo.type === AuthErrorType.TWO_FACTOR_REQUIRED) {
+          setNeedsTwoFactor(true)
+        } else {
+          setError(errorInfo)
+        }
+      } else {
+        // Success - redirect
+        window.location.href = "/profile"
+      }
+    } catch (err) {
+      setError(handleAuthError(err))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRetry = () => {
+    setError(null)
+    setNeedsTwoFactor(false)
+  }
+
+  const handleVerifyEmail = async () => {
+    // Implement email verification resend
+    console.log("Resending verification email for:", email)
+  }
+
+  if (needsTwoFactor) {
+    return (
+      <TwoFactorForm
+        email={email}
+        password={password}
+        onBack={() => setNeedsTwoFactor(false)}
+        onSuccess={() => window.location.href = "/profile"}
+        onError={(err) => setError(handleAuthError(err))}
+      />
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={isLoading}
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          disabled={isLoading}
+        />
+      </div>
+
+      {error && (
+        <ErrorAlert
+          error={error}
+          onRetry={handleRetry}
+          onVerifyEmail={handleVerifyEmail}
+        />
+      )}
+
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? "Signing in..." : "Sign In"}
+      </Button>
+    </form>
+  )
+}
+```
+
+## 🔍 Error Monitoring & Logging
+
+### Error Logging Service
+
+```ts
+// lib/error-logger.ts
+import { prisma } from "@/lib/prisma"
+
+interface ErrorLog {
+  type: string
+  message: string
+  userId?: string
+  ipAddress?: string
+  userAgent?: string
+  stack?: string
+  metadata?: any
+}
+
+export async function logAuthError(errorLog: ErrorLog) {
+  try {
+    await prisma.errorLog.create({
+      data: {
+        type: errorLog.type,
+        message: errorLog.message,
+        userId: errorLog.userId,
+        ipAddress: errorLog.ipAddress,
+        userAgent: errorLog.userAgent,
+        stack: errorLog.stack,
+        metadata: errorLog.metadata ? JSON.stringify(errorLog.metadata) : null,
+        createdAt: new Date(),
+      }
+    })
+  } catch (err) {
+    console.error("Failed to log error:", err)
+  }
+}
+
+// Usage in auth actions
+export async function loginWithErrorLogging(credentials: any) {
+  try {
+    return await signIn("credentials", credentials)
+  } catch (error) {
+    await logAuthError({
+      type: "LOGIN_ERROR",
+      message: error.message,
+      metadata: { email: credentials.email },
+    })
+    throw error
+  }
+}
+```
+
+### Error Analytics Dashboard
+
+```tsx
+// components/admin/error-analytics.tsx
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
+interface ErrorStat {
+  type: string
+  count: number
+  lastOccurred: Date
+}
+
+export function ErrorAnalytics() {
+  const [errorStats, setErrorStats] = useState<ErrorStat[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Fetch error statistics
+    fetchErrorStats()
+  }, [])
+
+  const fetchErrorStats = async () => {
+    try {
+      // Implementation would fetch from your analytics endpoint
+      const response = await fetch("/api/admin/error-stats")
+      const data = await response.json()
+      setErrorStats(data)
+    } catch (error) {
+      console.error("Failed to fetch error stats:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Authentication Error Statistics</CardTitle>
+        <CardDescription>
+          Monitor authentication errors and trends
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-4">Loading statistics...</div>
+        ) : (
+          <div className="space-y-3">
+            {errorStats.map((stat) => (
+              <div key={stat.type} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="font-medium">{stat.type.replace(/_/g, " ")}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Last occurred: {new Date(stat.lastOccurred).toLocaleDateString()}
+                  </div>
+                </div>
+                <Badge variant={stat.count > 10 ? "destructive" : "default"}>
+                  {stat.count} occurrences
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+## 🛠️ Development & Debugging
+
+### Debug Mode for Development
+
+```ts
+// lib/debug-auth.ts
+export const DEBUG_MODE = process.env.NODE_ENV === "development"
+
+export function debugAuthError(error: any, context: string) {
+  if (!DEBUG_MODE) return
+
+  console.group(`🚨 Auth Debug: ${context}`)
+  console.error("Error:", error)
+  console.error("Stack:", error.stack)
+  console.error("Type:", typeof error)
+  console.error("Constructor:", error.constructor.name)
+  console.groupEnd()
+}
+
+// Usage
+try {
+  await signIn(...)
+} catch (error) {
+  debugAuthError(error, "Sign In Process")
+  // Handle error...
+}
+```
+
+### Error Boundary for Auth Components
+
+```tsx
+// components/auth/auth-error-boundary.tsx
+"use client"
+
+import React from "react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { RefreshCw } from "lucide-react"
+
+interface AuthErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+export class AuthErrorBoundary extends React.Component<
+  React.PropsWithChildren<{}>,
+  AuthErrorBoundaryState
+> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): AuthErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Auth Error Boundary caught an error:", error, errorInfo)
+    
+    // Log to monitoring service
+    if (typeof window !== "undefined") {
+      // Send to error tracking service
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="max-w-md w-full space-y-4">
+            <Alert variant="destructive">
+              <AlertDescription>
+                Something went wrong with the authentication system.
+              </AlertDescription>
+            </Alert>
+            
+            <Button
+              onClick={() => {
+                this.setState({ hasError: false, error: undefined })
+                window.location.reload()
+              }}
+              className="w-full"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+```
+
+## 🚨 Common Error Scenarios
+
+### 1. Invalid Credentials
+
+```ts
+// Handle gracefully without revealing too much information
+if (!user || !passwordMatch) {
+  throw new AuthError(
+    AuthErrorType.INVALID_CREDENTIALS,
+    "Invalid email or password"
+  )
+}
+```
+
+### 2. Rate Limiting
+
+```ts
+// Implement progressive backoff
+const { success, limit, remaining, reset } = await rateLimit.limit(identifier)
+
+if (!success) {
+  throw new AuthError(
+    AuthErrorType.RATE_LIMITED,
+    `Too many attempts. Try again in ${Math.ceil((reset - Date.now()) / 1000)} seconds`
+  )
+}
+```
+
+### 3. OAuth Errors
+
+```tsx
+// Handle OAuth-specific errors
+const oauthErrors = {
+  "OAuthSignin": "Error occurred during OAuth signin",
+  "OAuthCallback": "OAuth callback error",
+  "OAuthCreateAccount": "Could not create OAuth account",
+  "OAuthAccountNotLinked": "Email already exists with different provider",
+}
+
+export default function AuthError({ searchParams }: { searchParams: { error: string } }) {
+  const error = searchParams.error
+  const message = oauthErrors[error] || "An unexpected error occurred"
+  
+  return (
+    <ErrorAlert 
+      error={{
+        message,
+        type: AuthErrorType.OAUTH_ERROR,
+        action: "try_different_method"
+      }}
+    />
+  )
+}
+```
+
+## ✅ Best Practices
+
+### Error Handling Checklist
+
+- [ ] **Clear, user-friendly** error messages
+- [ ] **No sensitive information** in error messages
+- [ ] **Consistent error format** across the app
+- [ ] **Proper logging** for debugging
+- [ ] **Rate limiting** on error-prone endpoints
+- [ ] **Graceful degradation** when services fail
+- [ ] **Error boundaries** for React components
+
+### Security Considerations
+
+- [ ] **Don't reveal** if email exists during login
+- [ ] **Consistent timing** for valid/invalid attempts
+- [ ] **Limit error details** in production
+- [ ] **Monitor suspicious** error patterns
+- [ ] **Rate limit** error-prone operations
+
+## 🔧 Testing Error Scenarios
+
+```ts
+// Test helpers for error scenarios
+export const testErrorScenarios = {
+  async testInvalidCredentials() {
+    const result = await signIn("credentials", {
+      email: "test@example.com",
+      password: "wrongpassword",
+      redirect: false,
+    })
+    expect(result?.error).toBe("CredentialsSignin")
+  },
+
+  async testRateLimit() {
+    // Make multiple requests quickly
+    const promises = Array(10).fill(null).map(() => 
+      signIn("credentials", { email: "test@test.com", password: "wrong" })
+    )
+    const results = await Promise.all(promises)
+    // Should eventually return rate limit error
+  }
+}
+```
+
+## 🔄 Next Steps
+
+1. Set up [Social Logins](/docs/auth/social-logins)
+2. Implement [Security Monitoring](/docs/monitoring)
+3. Add [Error Analytics](/docs/analytics)
+4. Configure [Alerting](/docs/alerts)
+
+Your authentication error handling is now robust and user-friendly! 🚨✨ 
