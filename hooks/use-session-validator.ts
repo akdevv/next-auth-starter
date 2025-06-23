@@ -3,19 +3,42 @@
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function useSessionValidator() {
 	const { data: session, status } = useSession();
 	const router = useRouter();
+	const pathname = usePathname();
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const hasShownLogoutMessage = useRef(false);
 	const isValidating = useRef(false);
+
+	// Check if user is on authentication pages where validation should be skipped
+	const isOnAuthPages = () => {
+		const authPaths = [
+			"/auth/login",
+			"/auth/register",
+			"/auth/verify-email",
+			"/auth/forgot-password",
+			"/auth/2fa",
+			"/auth/error",
+		];
+
+		return authPaths.some((path) => pathname?.startsWith(path));
+	};
 
 	const validateSession = async () => {
 		// Prevent multiple simultaneous validations
 		if (isValidating.current) return;
 		if (status !== "authenticated" || !session?.user) return;
+
+		// Skip validation if user is on authentication pages
+		if (isOnAuthPages()) {
+			console.log(
+				"Skipping session validation - user is on authentication page"
+			);
+			return;
+		}
 
 		// Skip validation for users who haven't verified their email yet
 		// They are in a legitimate intermediate state during registration
@@ -102,6 +125,14 @@ export function useSessionValidator() {
 
 	useEffect(() => {
 		if (status === "authenticated" && session?.user) {
+			// Skip session validation setup if user is on authentication pages
+			if (isOnAuthPages()) {
+				console.log(
+					"User is on authentication page, skipping session validator setup"
+				);
+				return;
+			}
+
 			// Only start session validation for email-verified users
 			if (!session.user.emailVerified) {
 				console.log(
@@ -156,7 +187,7 @@ export function useSessionValidator() {
 				window.removeEventListener("focus", handleFocus);
 			};
 		}
-	}, [status, session?.user?.id, session?.user?.emailVerified]);
+	}, [status, session?.user?.id, session?.user?.emailVerified, pathname]);
 
 	return { validateSession };
 }
