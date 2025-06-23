@@ -82,7 +82,13 @@ export default function Register() {
 			});
 
 			if (!signInResult?.error) {
-				router.push(callbackUrl);
+				// Store the callbackUrl in sessionStorage so we can redirect there after email verification
+				sessionStorage.setItem(
+					"postVerificationCallbackUrl",
+					callbackUrl
+				);
+				// Redirect to verify email page instead of callbackUrl
+				router.push("/auth/verify-email");
 			} else {
 				setError(
 					"Account created but failed to sign in. Please try logging in."
@@ -242,7 +248,7 @@ export default function Register() {
 					<p className="text-sm text-muted-foreground">
 						Already have an account?{" "}
 						<Link
-							href="/auth/login"
+							href={`/auth/login?callbackUrl=${callbackUrl}`}
 							className="text-primary hover:underline"
 						>
 							Login

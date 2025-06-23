@@ -2,7 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,22 @@ export default function VerifyEmail() {
 	const router = useRouter();
 	const { data: session, status } = useSession();
 	const [isPending, setIsPending] = useState(false);
+	const [callbackUrl, setCallbackUrl] = useState<string>("/profile");
+
+	// Get callback URL from sessionStorage (for post-registration flow) or from URL params
+	useEffect(() => {
+		const storedCallbackUrl = sessionStorage.getItem(
+			"postVerificationCallbackUrl"
+		);
+		const params = new URLSearchParams(window.location.search);
+		const urlCallbackUrl = params.get("callbackUrl");
+
+		if (storedCallbackUrl) {
+			setCallbackUrl(decodeURIComponent(storedCallbackUrl));
+		} else if (urlCallbackUrl) {
+			setCallbackUrl(decodeURIComponent(urlCallbackUrl));
+		}
+	}, []);
 
 	const handleResendVerificationEmail = async () => {
 		if (status === "unauthenticated" || !session?.user?.email) {
@@ -52,9 +68,20 @@ export default function VerifyEmail() {
 	};
 
 	const cancelVerification = () => {
+		// Clear stored callback URL when canceling
+		sessionStorage.removeItem("postVerificationCallbackUrl");
 		router.push("/auth/login");
 		signOut();
 	};
+
+	// Check if user's email is already verified and redirect
+	useEffect(() => {
+		if (session?.user?.emailVerified) {
+			// Clear stored callback URL after successful verification
+			sessionStorage.removeItem("postVerificationCallbackUrl");
+			router.push(callbackUrl);
+		}
+	}, [session, callbackUrl, router]);
 
 	return (
 		<div className="mx-auto w-full max-w-md">

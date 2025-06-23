@@ -33,7 +33,17 @@ export default function VerifyEmailPage({
 	// const [isExpired, setIsExpired] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { data: session, status } = useSession();
-	// const { data: session, status, update } = useSession();
+	const [callbackUrl, setCallbackUrl] = useState<string>("/profile");
+
+	// Get callback URL from sessionStorage (for post-registration flow)
+	useEffect(() => {
+		const storedCallbackUrl = sessionStorage.getItem(
+			"postVerificationCallbackUrl"
+		);
+		if (storedCallbackUrl) {
+			setCallbackUrl(decodeURIComponent(storedCallbackUrl));
+		}
+	}, []);
 
 	// timer for countdown
 	useEffect(() => {
@@ -89,6 +99,8 @@ export default function VerifyEmailPage({
 				redirect: false,
 			});
 
+			console.log("signInResult", signInResult);
+
 			if (signInResult?.error) {
 				toast.error(
 					"Email verified but failed to sign in. Please try logging in."
@@ -98,7 +110,9 @@ export default function VerifyEmailPage({
 			}
 
 			toast.success("Email verified successfully!");
-			router.push("/profile");
+			// Clear stored callback URL after successful verification
+			sessionStorage.removeItem("postVerificationCallbackUrl");
+			router.push(callbackUrl);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "An error occurred";

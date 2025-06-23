@@ -218,7 +218,7 @@ export default function Login() {
 					<p className="text-sm text-muted-foreground">
 						Don&apos;t have an account?{" "}
 						<Link
-							href="/auth/register"
+							href={`/auth/register?callbackUrl=${callbackUrl}`}
 							className="text-primary hover:underline"
 						>
 							Register

@@ -17,6 +17,13 @@ export function useSessionValidator() {
 		if (isValidating.current) return;
 		if (status !== "authenticated" || !session?.user) return;
 
+		// Skip validation for users who haven't verified their email yet
+		// They are in a legitimate intermediate state during registration
+		if (!session.user.emailVerified) {
+			console.log("Skipping session validation for unverified user");
+			return;
+		}
+
 		isValidating.current = true;
 
 		try {
@@ -95,6 +102,14 @@ export function useSessionValidator() {
 
 	useEffect(() => {
 		if (status === "authenticated" && session?.user) {
+			// Only start session validation for email-verified users
+			if (!session.user.emailVerified) {
+				console.log(
+					"User email not verified, skipping session validator setup"
+				);
+				return;
+			}
+
 			console.log(
 				"Starting session validator for user:",
 				session.user.id
@@ -141,7 +156,7 @@ export function useSessionValidator() {
 				window.removeEventListener("focus", handleFocus);
 			};
 		}
-	}, [status, session]);
+	}, [status, session?.user?.id, session?.user?.emailVerified]);
 
 	return { validateSession };
 }
