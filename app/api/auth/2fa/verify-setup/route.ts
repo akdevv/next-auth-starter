@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-	console.log("got the request............");
 	try {
 		const session = await auth();
 
@@ -19,7 +18,6 @@ export async function POST(req: NextRequest) {
 				{ status: 401 }
 			);
 		}
-		console.log("session", session);
 
 		const { token, secret } = await req.json();
 		if (!token || !secret) {
@@ -28,19 +26,15 @@ export async function POST(req: NextRequest) {
 				{ status: 400 }
 			);
 		}
-		console.log("token and secret", token, secret);
 
 		// verify the token
 		const isValid = verifyTwoFactorToken(token, secret);
-		console.log("isValid", isValid);
 		if (!isValid) {
-			console.log("invalid token");
 			return NextResponse.json(
 				{ error: "Invalid token" },
 				{ status: 400 }
 			);
 		}
-		console.log("token verified");
 
 		// Check if user exists
 		const existingUser = await db.user.findUnique({
@@ -67,8 +61,6 @@ export async function POST(req: NextRequest) {
 				backupCodes: hashedBackupCodes,
 			},
 		});
-
-		console.log("user updated");
 
 		return NextResponse.json({ success: true });
 	} catch (error) {

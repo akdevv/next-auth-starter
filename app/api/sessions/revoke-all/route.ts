@@ -1,9 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/prisma";
-import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
 	try {
 		const session = await auth();
 

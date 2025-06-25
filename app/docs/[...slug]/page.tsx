@@ -1,10 +1,8 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import MDXContent from "@/components/docs/mdx-content";
-import { MDXContentSkeleton } from "@/components/docs/mdx-content-skeleton";
 
 interface DocsPageProps {
 	params: { slug: string[] };
@@ -32,9 +30,5 @@ export default async function DocsPage({ params }: DocsPageProps) {
 
 	if (!doc) notFound();
 
-	return (
-		<Suspense fallback={<MDXContentSkeleton />}>
-			<MDXContent doc={doc} />
-		</Suspense>
-	);
+	return <MDXContent doc={doc} />;
 }

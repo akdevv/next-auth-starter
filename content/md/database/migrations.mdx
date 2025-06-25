@@ -1,0 +1,58 @@
+---
+title: Database Migrations
+description: Understanding database schema evolution and migration management
+tags: [migrations, prisma, database, schema]
+---
+
+# 🔄 Database Migrations
+
+Database migrations provide version control for your database schema, ensuring consistent deployments across environments.
+
+## 📋 Migration History
+
+The project includes several key migrations that built the authentication system:
+
+### Core Foundation
+- **Initial Setup**: User, Account, and Session models
+- **Verification System**: Email verification and password reset tables
+- **Security Enhancements**: Two-factor authentication support
+
+### Session Management Evolution
+- **Device Tracking**: Added device name and location tracking
+- **Session Security**: Enhanced with revocation capabilities
+- **Audit Trail**: Complete session lifecycle monitoring
+
+## 🛠️ Migration Commands
+
+### Create New Migration
+```bash
+npx prisma migrate dev --name descriptive_name
+```
+
+### Deploy to Production
+```bash
+npx prisma migrate deploy
+```
+
+### Reset Database
+```bash
+npx prisma migrate reset
+```
+
+## 📁 Migration Structure
+
+```
+prisma/migrations/
+├── 20250517114907_dev/
+├── 20250517130815_add_verification_tables/
+├── 20250524115805_add_2fa_tracking/
+├── 20250526092323_add_session_management/
+└── 20250528181428_session_revoke/
+```
+
+## ✅ Best Practices
+
+- **Descriptive Names**: Use clear, action-oriented migration names
+- **Test First**: Always test migrations in development
+- **Backup**: Create database backups before production deployments
+- **Review**: Carefully review generated SQL before applying 

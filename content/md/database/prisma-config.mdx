@@ -1,0 +1,57 @@
+---
+title: Prisma Configuration
+description: Understanding the Prisma client setup and database connection
+tags: [prisma, configuration, database, typescript]
+---
+
+# ⚙️ Prisma Configuration
+
+Prisma serves as our type-safe database client, providing seamless integration between TypeScript and PostgreSQL.
+
+## 📁 Client Setup
+
+The Prisma client is configured for optimal performance in both development and production environments:
+
+```ts
+// lib/prisma.ts
+import { PrismaClient } from "@prisma/client";
+
+declare global {
+	var prisma: PrismaClient | undefined;
+}
+
+export const db = globalThis.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+	globalThis.prisma = db;
+}
+```
+
+## 🎯 Key Features
+
+### Development Optimization
+- **Global instance**: Prevents multiple client instances during development
+- **Hot reload friendly**: Maintains connection across file changes
+
+### Production Ready
+- **Single instance**: Clean client instantiation for production
+- **Connection pooling**: Efficient database connection management
+
+## 🔧 Configuration Benefits
+
+- **Type Safety**: Auto-generated types for all database operations
+- **Query Builder**: Intuitive API for complex database queries
+- **Migration System**: Version-controlled database schema changes
+- **Performance**: Built-in query optimization and caching
+
+## 📝 Usage
+
+Import the database client anywhere in your application:
+
+```ts
+import { db } from "@/lib/prisma";
+
+const user = await db.user.findUnique({
+  where: { email: "user@example.com" }
+});
+``` 

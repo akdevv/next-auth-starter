@@ -1,0 +1,66 @@
+---
+title: User Model Structure
+description: Complete breakdown of the User model and its authentication fields
+tags: [user, model, authentication, database]
+---
+
+# 👤 User Model Structure
+
+The User model is the central entity of the authentication system, storing all user information and security settings.
+
+## 🔧 Core Fields
+
+### Identity & Profile
+```prisma
+id          String   @id @default(cuid())
+name        String?
+email       String   @unique
+image       String?
+```
+
+### Authentication
+```prisma
+password       String?
+emailVerified  DateTime?
+```
+
+### Security Features
+```prisma
+twoFactorEnabled  Boolean    @default(false)
+twoFactorSecret   String?
+backupCodes       String[]
+```
+
+### Audit & Tracking
+```prisma
+createdAt           DateTime  @default(now())
+updatedAt           DateTime  @updatedAt
+lastPasswordUpdate  DateTime?
+```
+
+## 🔗 Relationships
+
+The User model connects to several related entities:
+
+- **Sessions**: Active user sessions with device tracking
+- **Accounts**: OAuth provider connections (Google, etc.)
+- **TwoFactorTokens**: Temporary 2FA verification tokens
+- **VerificationAttempts**: Email verification and password reset history
+
+## 🛡️ Security Features
+
+### Password Management
+- **Hashed Storage**: Passwords are never stored in plain text
+- **Update Tracking**: `lastPasswordUpdate` monitors password changes
+
+### Two-Factor Authentication
+- **TOTP Secret**: Secure storage of 2FA secret keys
+- **Backup Codes**: Emergency access codes for account recovery
+- **Enable/Disable**: Flexible 2FA configuration
+
+## 📊 Data Types
+
+- **CUID**: Collision-resistant unique identifiers
+- **Optional Fields**: Flexible schema for different auth methods
+- **Arrays**: Efficient storage of backup codes
+- **Timestamps**: Automatic audit trail creation 

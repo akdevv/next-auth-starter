@@ -1,0 +1,65 @@
+---
+title: Backup Codes System
+description: Understanding the backup code implementation for account recovery
+tags: [backup-codes, security, recovery, 2fa]
+---
+
+# 🔑 Backup Codes System
+
+Backup codes provide a secure recovery method when users lose access to their primary two-factor authentication device.
+
+## 🏗️ Storage Design
+
+### User Model Integration
+```prisma
+model User {
+  // ... other fields
+  backupCodes  String[]
+  // ... other fields
+}
+```
+
+The backup codes are stored as an array of strings directly in the User model, providing:
+- **Fast Access**: Direct relationship without additional joins
+- **Type Safety**: Array validation through Prisma
+- **Scalability**: Efficient storage for multiple codes
+
+## 🔐 Security Features
+
+### Code Generation
+- **Cryptographically Secure**: Generated using secure random algorithms
+- **One-Time Use**: Each code becomes invalid after use
+- **Limited Quantity**: Typically 8-10 codes per user
+
+### Storage Security
+- **Hashed Values**: Codes are hashed before database storage
+- **Salt Protection**: Each code uses unique salt values
+- **Array Management**: Efficient add/remove operations
+
+## 🔄 Lifecycle Management
+
+### Code Generation
+```ts
+// Generate new backup codes
+const codes = generateBackupCodes(10);
+await db.user.update({
+  where: { id: userId },
+  data: { backupCodes: codes }
+});
+```
+
+### Code Verification & Removal
+```ts
+// Verify and remove used code
+const isValid = await verifyBackupCode(userId, code);
+if (isValid) {
+  await removeUsedBackupCode(userId, code);
+}
+```
+
+## ✅ Best Practices
+
+- **Regular Regeneration**: Encourage users to regenerate codes periodically
+- **Secure Display**: Show codes only once during generation
+- **Download Options**: Allow users to save codes securely
+- **Usage Tracking**: Monitor code usage for security insights 

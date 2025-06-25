@@ -1,0 +1,72 @@
+---
+title: Session Management
+description: Understanding session storage, tracking, and security features
+tags: [sessions, security, tracking, authentication]
+---
+
+# 🔐 Session Management
+
+The Session model provides comprehensive session tracking with security monitoring and device management capabilities.
+
+## 📊 Session Fields
+
+### Core Session Data
+```prisma
+id           String    @id @default(cuid())
+sessionToken String    @unique
+userId       String
+expires      DateTime
+```
+
+### Device & Location Tracking
+```prisma
+deviceName   String?
+ipAddress    String?
+location     String?
+userAgent    String?
+```
+
+### Activity Monitoring
+```prisma
+createdAt    DateTime  @default(now())
+lastActive   DateTime  @default(now())
+```
+
+### Security Controls
+```prisma
+isRevoked    Boolean   @default(false)
+revokedAt    DateTime?
+revokedBy    String?
+```
+
+## 🛡️ Security Features
+
+### Session Revocation
+- **Manual Revocation**: Users can terminate sessions from any device
+- **Bulk Revocation**: Revoke all sessions except current
+- **Audit Trail**: Track who revoked which sessions
+
+### Device Tracking
+- **Device Identification**: Name and user agent detection
+- **Location Monitoring**: IP-based location tracking
+- **Activity Updates**: Real-time last active timestamps
+
+## 🔍 Monitoring Capabilities
+
+### Security Dashboard
+Users can view all active sessions with:
+- Device information and location
+- Last activity timestamps
+- Session creation dates
+- Revocation controls
+
+### Admin Features
+- Session analytics and monitoring
+- Suspicious activity detection
+- Bulk session management
+
+## 📈 Performance Optimization
+
+- **Indexed Fields**: `userId` and `sessionToken` for fast lookups
+- **Automatic Cleanup**: Expired sessions are regularly purged
+- **Efficient Queries**: Optimized for dashboard displays 

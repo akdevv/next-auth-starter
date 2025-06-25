@@ -1,0 +1,59 @@
+---
+title: JWT Tokens
+description: Understanding JSON Web Tokens and how they work in authentication
+tags: [jwt, tokens, authentication, security]
+---
+
+# 🎫 JWT Tokens
+
+JSON Web Tokens (JWTs) are a secure way to transmit information between parties. Think of them like a digital passport that proves who you are.
+
+## 🤔 What Are JWT Tokens?
+
+### Simple Explanation
+A JWT is like a **secure note** that contains:
+- **Who you are** (your user ID)
+- **When it was created** (timestamp)
+- **When it expires** (expiration date)
+- **A signature** to prove it's authentic
+
+### Real-World Analogy
+```
+JWT = Concert Ticket
+├── Your Name (who)
+├── Event Date (when)
+├── Seat Number (permissions)
+└── Security Hologram (signature)
+```
+
+## 🏗️ How They Work
+
+### Three Parts
+```
+eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiIxMjMifQ.signature
+     ↑ Header    ↑ Payload    ↑ Signature
+```
+
+1. **Header**: Says "this is a JWT token"
+2. **Payload**: Contains your user information
+3. **Signature**: Proves nobody tampered with it
+
+## 🔐 In This Codebase
+
+### Session Tokens
+Instead of traditional JWTs, we use **session tokens**:
+- Stored in secure cookies
+- Reference database sessions
+- More secure for web applications
+
+### Why Session Tokens?
+- **Revokable**: Can instantly logout users
+- **Stateful**: Track user activity and devices
+- **Secure**: Harder to steal than JWTs
+
+## ✅ Key Benefits
+
+- **Stateless**: Server doesn't need to remember anything
+- **Portable**: Work across different services
+- **Secure**: Cryptographically signed and verified
+- **Efficient**: Lightweight and fast to process 

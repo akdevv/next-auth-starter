@@ -34,24 +34,18 @@ export function useSessionValidator() {
 
 		// Skip validation if user is on authentication pages
 		if (isOnAuthPages()) {
-			console.log(
-				"Skipping session validation - user is on authentication page"
-			);
 			return;
 		}
 
 		// Skip validation for users who haven't verified their email yet
 		// They are in a legitimate intermediate state during registration
 		if (!session.user.emailVerified) {
-			console.log("Skipping session validation for unverified user");
 			return;
 		}
 
 		isValidating.current = true;
 
 		try {
-			console.log("Validating session...");
-
 			const response = await fetch("/api/auth/validate-session", {
 				method: "GET",
 				cache: "no-store",
@@ -62,11 +56,8 @@ export function useSessionValidator() {
 			});
 
 			const result = await response.json();
-			console.log("Session validation result:", result);
 
 			if (!result.valid && result.shouldLogout) {
-				console.log("Session invalid, logging out:", result.reason);
-
 				// Show logout message only once
 				if (!hasShownLogoutMessage.current) {
 					hasShownLogoutMessage.current = true;
@@ -119,32 +110,19 @@ export function useSessionValidator() {
 		cookieConfigs.forEach((cookie) => {
 			document.cookie = cookie;
 		});
-
-		console.log("Session cookies cleared");
 	};
 
 	useEffect(() => {
 		if (status === "authenticated" && session?.user) {
 			// Skip session validation setup if user is on authentication pages
 			if (isOnAuthPages()) {
-				console.log(
-					"User is on authentication page, skipping session validator setup"
-				);
 				return;
 			}
 
 			// Only start session validation for email-verified users
 			if (!session.user.emailVerified) {
-				console.log(
-					"User email not verified, skipping session validator setup"
-				);
 				return;
 			}
-
-			console.log(
-				"Starting session validator for user:",
-				session.user.id
-			);
 
 			// Validate immediately on mount
 			validateSession();
@@ -157,14 +135,12 @@ export function useSessionValidator() {
 			// Validate when page becomes visible (user switches back to tab)
 			const handleVisibilityChange = () => {
 				if (!document.hidden) {
-					console.log("Page became visible, validating session");
 					validateSession();
 				}
 			};
 
 			// Validate when window gains focus
 			const handleFocus = () => {
-				console.log("Window focused, validating session");
 				validateSession();
 			};
 

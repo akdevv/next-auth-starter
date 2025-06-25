@@ -1,0 +1,80 @@
+---
+title: CSRF Protection
+description: Understanding Cross-Site Request Forgery attacks and how we prevent them
+tags: [csrf, security, attacks, protection]
+---
+
+# 🛡️ CSRF Protection
+
+Cross-Site Request Forgery (CSRF) is like someone forging your signature to access your bank account. Let's learn how we protect against it!
+
+## 🤔 What Is CSRF?
+
+### Simple Explanation
+CSRF happens when a **malicious website** tricks your browser into making requests to our app **using your logged-in session**.
+
+### Real-World Analogy
+```
+CSRF Attack = Forged Check
+├── Your Bank Account (Our App)
+├── Signed Blank Check (Your Session)
+├── Malicious Person (Bad Website)
+└── Unauthorized Purchase (Harmful Action)
+```
+
+## 😈 How CSRF Attacks Work
+
+### The Attack Scenario
+1. **You login** to our banking app
+2. **You visit** a malicious website (in another tab)
+3. **The bad site** has hidden forms targeting our app
+4. **Your browser** automatically sends your cookies
+5. **Our app** thinks the request came from you
+6. **Money gets transferred** without your knowledge!
+
+## 🛡️ How We Protect You
+
+### CSRF Tokens
+```html
+<!-- Every form gets a secret token -->
+<form>
+  <input type="hidden" name="csrfToken" value="abc123xyz">
+  <button type="submit">Transfer Money</button>
+</form>
+```
+
+### The Protection Process
+1. **We generate** a random secret token
+2. **We embed** it in every form
+3. **You submit** the form with the token
+4. **We verify** the token matches our records
+5. **If valid**, we process the request
+6. **If missing/wrong**, we reject it
+
+## 🔐 In This Codebase
+
+### NextAuth CSRF Protection
+- **Automatic tokens**: NextAuth handles CSRF tokens for us
+- **State parameters**: OAuth flows include state verification
+- **Secure cookies**: Session cookies have CSRF protection built-in
+
+### Form Protection
+```ts
+// Forms automatically include CSRF tokens
+const formData = new FormData();
+formData.append('csrfToken', await getCsrfToken());
+```
+
+## 🚫 What CSRF Can't Do
+
+### Limitations of Attacks
+- **Can't read responses**: Only send requests, not read results
+- **Can't steal tokens**: Tokens are hidden from malicious sites
+- **Can't bypass CORS**: Cross-origin restrictions still apply
+
+## ✅ Protection Benefits
+
+- **Invisible security**: Works without user interaction
+- **Automatic defense**: Built into our authentication system
+- **Industry standard**: Proven protection method
+- **Zero maintenance**: No additional user setup required 

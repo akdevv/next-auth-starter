@@ -1,0 +1,54 @@
+---
+title: Two-Factor Authentication (2FA)
+description: TOTP-based two-factor authentication with QR codes and backup recovery
+tags: [2fa, totp, security, authentication]
+---
+
+# 🛡️ Two-Factor Authentication (2FA)
+
+Our 2FA system uses Time-based One-Time Passwords (TOTP) compatible with popular authenticator apps like Google Authenticator, Authy, and 1Password.
+
+## 🔧 How It Works
+
+### TOTP Configuration
+- **30-second time window**: Codes refresh every 30 seconds
+- **1-step tolerance**: Accepts previous/next time window for clock sync
+- **Base32 encoding**: Standard format for authenticator apps
+
+### Setup Process
+```ts
+// Generate 2FA setup data
+const setup = await generateTwoFactorSetup(email);
+// Returns: secret, qrCodeUrl, manualEntryKey, backupCodes
+```
+
+## 📱 User Experience
+
+### QR Code Setup
+- **Instant scanning**: QR codes for easy authenticator app setup
+- **Manual entry**: Formatted secret keys for manual input
+- **Universal compatibility**: Works with all major authenticator apps
+
+### Verification
+```ts
+const isValid = verifyTwoFactorToken(userToken, storedSecret);
+```
+
+## 🔐 Security Features
+
+### Secret Management
+- **Encrypted storage**: Secrets are encrypted before database storage
+- **Secure generation**: Cryptographically secure random secret generation
+- **Base64 encoding**: Safe storage format (production uses proper encryption)
+
+### Session Tokens
+- **Temporary tokens**: 32-byte hex tokens for 2FA session management
+- **Time-limited**: Tokens expire to prevent replay attacks
+- **Single-use**: Consumed after successful verification
+
+## ✅ Best Practices
+
+- **Backup codes**: Always generated alongside 2FA setup
+- **Recovery options**: Multiple ways to regain account access
+- **Time sync**: Handles clock drift between client and server
+- **Error handling**: Graceful failure with security logging 

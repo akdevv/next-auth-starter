@@ -99,8 +99,6 @@ export default function VerifyEmailPage({
 				redirect: false,
 			});
 
-			console.log("signInResult", signInResult);
-
 			if (signInResult?.error) {
 				toast.error(
 					"Email verified but failed to sign in. Please try logging in."

@@ -1,0 +1,201 @@
+---
+title: API Polling
+description: Understanding how to fetch fresh data and keep your app updated
+tags: [api, polling, real-time, updates]
+---
+
+# 🔄 API Polling
+
+API polling is like checking your mailbox every few minutes to see if new mail has arrived - it keeps your app updated with fresh data!
+
+## 🤔 What Is API Polling?
+
+### Simple Explanation
+API polling is **repeatedly asking the server** "Hey, do you have any new data for me?" at regular intervals.
+
+### Real-World Analogy
+```
+API Polling = Checking Your Phone
+├── Check Messages (API Call)
+├── Wait 30 seconds (Interval)
+├── Check Again (Repeat)
+└── New Notification! (Fresh Data)
+```
+
+## 🔄 How Polling Works
+
+### Basic Process
+1. **Make API request** to get current data
+2. **Wait for response** and update UI
+3. **Wait specific time** (polling interval)
+4. **Repeat the cycle** automatically
+5. **Stop when** component unmounts
+
+### Polling vs Real-time
+```
+Polling:    Check → Wait → Check → Wait → Check
+Real-time:  Server pushes data instantly when it changes
+```
+
+## 🏗️ Implementation Examples
+
+### Simple Polling Hook
+```ts
+// Custom hook for API polling
+function usePolling(url: string, interval: number = 5000) {
+  const [data, setData] = useState(null);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch(url);
+      const result = await response.json();
+      setData(result);
+    };
+
+    fetchData(); // Initial fetch
+    const intervalId = setInterval(fetchData, interval);
+    
+    return () => clearInterval(intervalId); // Cleanup
+  }, [url, interval]);
+
+  return data;
+}
+```
+
+### In This Codebase
+```ts
+// Poll user sessions every 30 seconds
+const sessions = usePolling('/api/sessions', 30000);
+
+// Poll 2FA setup status during verification
+const setupStatus = usePolling('/api/2fa/status', 2000);
+```
+
+## ⚡ Polling Strategies
+
+### Fixed Interval
+```ts
+// Check every 5 seconds, no matter what
+setInterval(() => fetchData(), 5000);
+```
+
+### Smart Polling
+```ts
+// Slower polling when tab is not visible
+const interval = document.hidden ? 60000 : 5000;
+setInterval(() => fetchData(), interval);
+```
+
+### Exponential Backoff
+```ts
+// Increase delay after each failure
+let delay = 1000;
+const poll = () => {
+  fetchData()
+    .then(() => delay = 1000) // Reset on success
+    .catch(() => delay *= 2); // Double on failure
+  
+  setTimeout(poll, delay);
+};
+```
+
+## 🎯 When to Use Polling
+
+### Good Use Cases
+- **Session monitoring**: Check if user is still logged in
+- **Status updates**: Monitor long-running processes
+- **Live dashboards**: Show real-time metrics
+- **Chat applications**: Fetch new messages
+
+### When NOT to Use
+- **High-frequency data**: Use WebSockets instead
+- **Large datasets**: Too much bandwidth usage
+- **Battery-sensitive**: Mobile apps with limited power
+- **Real-time critical**: Financial trading, gaming
+
+## 🔐 In Authentication Systems
+
+### Session Validation
+```ts
+// Check if session is still valid
+useEffect(() => {
+  const validateSession = async () => {
+    const response = await fetch('/api/auth/validate');
+    if (!response.ok) {
+      signOut(); // Session expired
+    }
+  };
+
+  const interval = setInterval(validateSession, 60000); // Every minute
+  return () => clearInterval(interval);
+}, []);
+```
+
+### Activity Monitoring
+```ts
+// Update last active timestamp
+const updateActivity = () => {
+  fetch('/api/sessions/update', { method: 'POST' });
+};
+
+// Poll every 5 minutes when user is active
+useInterval(updateActivity, 5 * 60 * 1000);
+```
+
+## 📊 Performance Optimization
+
+### Efficient Polling
+- **Conditional requests**: Only fetch if data might have changed
+- **ETag headers**: Server tells us if data is unchanged
+- **Compression**: Reduce bandwidth usage
+- **Debouncing**: Don't poll if user is actively browsing
+
+### Smart Intervals
+```ts
+// Adaptive polling based on user activity
+const getInterval = () => {
+  if (document.hidden) return 60000;        // 1 minute when hidden
+  if (Date.now() - lastActivity > 300000) return 30000; // 30s when idle
+  return 10000; // 10s when active
+};
+```
+
+## 🛡️ Best Practices
+
+### Error Handling
+```ts
+const pollWithRetry = async () => {
+  try {
+    const data = await fetchData();
+    setData(data);
+    setError(null);
+  } catch (err) {
+    setError(err.message);
+    // Continue polling even on errors
+  }
+};
+```
+
+### Cleanup
+```ts
+useEffect(() => {
+  const interval = setInterval(pollData, 5000);
+  
+  // Always cleanup to prevent memory leaks
+  return () => clearInterval(interval);
+}, []);
+```
+
+## ✅ Benefits & Trade-offs
+
+### Benefits
+- **Simple implementation**: Easy to understand and implement
+- **Universal support**: Works in all browsers
+- **Reliable**: Handles network failures gracefully
+- **Flexible**: Adjustable intervals and conditions
+
+### Trade-offs
+- **Resource usage**: More server requests and bandwidth
+- **Battery impact**: Continuous network activity
+- **Latency**: Delay between data changes and updates
+- **Scalability**: More users = more polling requests 

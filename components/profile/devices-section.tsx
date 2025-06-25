@@ -63,7 +63,6 @@ export default function DevicesSection() {
 			if (!response.ok) throw new Error("Failed to fetch sessions");
 
 			const data = await response.json();
-			console.log("data", data);
 			const processedSessions = data.sessions.map((session: any) => ({
 				...session,
 				lastActive: new Date(session.lastActive),
@@ -73,8 +72,6 @@ export default function DevicesSection() {
 			if (processedSessions.length > 0) {
 				processedSessions[0].isCurrent = true;
 			}
-
-			console.log("processedSessions", processedSessions);
 
 			setSessions(processedSessions);
 		} catch (error) {
@@ -294,7 +291,8 @@ export default function DevicesSection() {
 				<div>
 					<h2 className="text-xl font-bold">Active sessions</h2>
 					<p className="text-muted-foreground text-sm">
-						These are the devices where you're currently logged in
+						These are the devices where you&apos;re currently logged
+						in
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
@@ -374,7 +372,7 @@ export default function DevicesSection() {
 									No active sessions
 								</p>
 								<p className="text-xs text-muted-foreground">
-									You're only signed in on this device.
+									You&apos;re only signed in on this device.
 								</p>
 							</TableCell>
 						) : (

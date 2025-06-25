@@ -1,0 +1,150 @@
+---
+title: Session Management
+description: Understanding how user sessions work and keep you logged in
+tags: [sessions, authentication, cookies, security]
+---
+
+# 🔐 Session Management
+
+Session management is like having a VIP wristband at an event - it proves you belong there without having to show your ID every time!
+
+## 🤔 What Are Sessions?
+
+### Simple Explanation
+A session is a **temporary connection** between you and our app that remembers you're logged in as you navigate between pages.
+
+### Real-World Analogy
+```
+Session = Hotel Room Key
+├── Check-in (Login)
+├── Room Key (Session Token)
+├── Access Rooms (Protected Pages)
+└── Check-out (Logout/Expiry)
+```
+
+## 🔄 How Sessions Work
+
+### The Process
+1. **You login** with email/password
+2. **We create** a unique session ID
+3. **We store** session data in our database
+4. **We send** a secure cookie to your browser
+5. **Your browser** sends the cookie with each request
+6. **We verify** the session is valid
+7. **You stay logged in** across page visits
+
+### Session vs No Session
+```
+Without Session: Login → Page 1 → Login Again → Page 2 → Login Again
+With Session:    Login → Page 1 → Page 2 → Page 3 → Still Logged In ✅
+```
+
+## 🍪 Cookies vs Tokens
+
+### Our Approach: Secure Cookies
+```ts
+// Session stored in secure cookie
+const sessionCookie = {
+  httpOnly: true,    // Can't be accessed by JavaScript
+  secure: true,      // Only sent over HTTPS
+  sameSite: 'lax',   // CSRF protection
+  maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+};
+```
+
+### Why Cookies?
+- **Automatic**: Browser handles sending/receiving
+- **Secure**: HttpOnly prevents XSS attacks
+- **Persistent**: Survives browser restarts
+- **Revokable**: Can be invalidated server-side
+
+## 🏗️ In This Codebase
+
+### Session Storage
+```ts
+// Database session record
+const session = {
+  id: 'unique-session-id',
+  userId: 'user-123',
+  expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  deviceName: 'iPhone Safari',
+  ipAddress: '192.168.1.1',
+  lastActive: new Date()
+};
+```
+
+### Session Validation
+```ts
+// Check if session is valid
+const session = await getServerSession();
+if (!session || session.expires < new Date()) {
+  redirect('/auth/login');
+}
+```
+
+## 🛡️ Security Features
+
+### Session Protection
+- **Expiration**: Sessions automatically expire
+- **Rotation**: New session ID after sensitive actions
+- **Revocation**: Can logout from all devices
+- **Tracking**: Monitor active sessions
+
+### Attack Prevention
+```ts
+// Prevent session fixation
+if (sensitiveAction) {
+  await regenerateSession();
+}
+
+// Detect suspicious activity
+if (newLocation !== lastLocation) {
+  sendSecurityAlert(user.email);
+}
+```
+
+## 📊 Session Lifecycle
+
+### Creation
+1. **Successful login** → Generate session
+2. **Store in database** → Link to user
+3. **Set secure cookie** → Send to browser
+
+### Maintenance
+1. **Each request** → Validate session
+2. **Update activity** → Track last seen
+3. **Check expiry** → Extend if needed
+
+### Termination
+1. **User logout** → Delete session
+2. **Timeout** → Automatic cleanup
+3. **Security event** → Force logout
+
+## 📱 Multi-Device Sessions
+
+### Device Tracking
+```ts
+// Track multiple sessions per user
+const userSessions = await getUserSessions(userId);
+// Shows: iPhone, MacBook, Windows PC
+```
+
+### Session Control
+- **View all devices**: See where you're logged in
+- **Remote logout**: End sessions on other devices
+- **New device alerts**: Email when unknown device logs in
+- **Session limits**: Max 5 active sessions per user
+
+## ✅ Benefits
+
+### For Users
+- **Convenience**: Stay logged in across visits
+- **Security**: Control over active sessions
+- **Peace of mind**: See all login locations
+- **Quick recovery**: Easy logout from stolen devices
+
+### For Developers
+- **Stateful**: Remember user preferences and state
+- **Secure**: Server-side session validation
+- **Scalable**: Database storage handles growth
+- **Flexible**: Custom session duration per user type 

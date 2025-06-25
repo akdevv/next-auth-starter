@@ -1,0 +1,78 @@
+---
+title: Two-Factor Authentication Storage
+description: Database design for 2FA tokens and TOTP secret management
+tags: [2fa, totp, security, tokens]
+---
+
+# 🛡️ Two-Factor Authentication Storage
+
+The 2FA system uses a dual approach: storing TOTP secrets in the User model and managing temporary tokens in a dedicated TwoFactorToken model.
+
+## 🔧 User Model 2FA Fields
+
+### TOTP Configuration
+```prisma
+model User {
+  // ... other fields
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  backupCodes       String[]
+  // ... other fields
+}
+```
+
+### Field Purpose
+- **twoFactorEnabled**: Toggle 2FA requirement for user
+- **twoFactorSecret**: Encrypted TOTP secret for authenticator apps
+- **backupCodes**: Emergency recovery codes array
+
+## 🎫 TwoFactorToken Model
+
+### Temporary Token Management
+```prisma
+model TwoFactorToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expires   DateTime
+  used      Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+}
+```
+
+### Token Features
+- **Short Expiration**: Tokens expire within minutes
+- **Single Use**: Automatic invalidation after verification
+- **User Binding**: Linked to specific user accounts
+
+## 🔐 Security Implementation
+
+### TOTP Secret Storage
+- **Encryption**: Secrets encrypted before database storage
+- **Base32 Encoding**: Compatible with standard authenticator apps
+- **Secure Generation**: Cryptographically secure random generation
+
+### Token Management
+- **Time-Based Expiry**: Automatic cleanup of expired tokens
+- **Rate Limiting**: Prevent token spam and brute force
+- **Audit Trail**: Track token usage patterns
+
+## 📈 Performance Optimization
+
+### Database Indexes
+```prisma
+@@index([token])
+@@index([userId, expires])
+```
+
+- **Token Lookup**: Fast verification queries
+- **User Cleanup**: Efficient expired token removal
+- **Compound Index**: Optimized user-specific queries
+
+## 🔄 Token Lifecycle
+
+1. **Generation**: Create token during 2FA setup/verification
+2. **Validation**: Verify token against user input
+3. **Consumption**: Mark as used and invalidate
+4. **Cleanup**: Automatic removal of expired tokens 

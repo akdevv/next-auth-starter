@@ -24,9 +24,6 @@ export async function GET() {
 		});
 
 		if (!dbSession) {
-			console.log(
-				`Session validation failed for user ${session.user.id}: Session expired or revoked`
-			);
 			return NextResponse.json({
 				valid: false,
 				reason: "Session expired or revoked",

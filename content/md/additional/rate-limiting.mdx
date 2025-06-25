@@ -1,0 +1,98 @@
+---
+title: Rate Limiting
+description: Understanding how we prevent abuse and protect against attacks
+tags: [rate-limiting, security, attacks, ddos]
+---
+
+# ⏱️ Rate Limiting
+
+Rate limiting is like a bouncer at a club who controls how many people can enter at once. It protects our app from being overwhelmed!
+
+## 🤔 What Is Rate Limiting?
+
+### Simple Explanation
+Rate limiting **controls how many requests** a user can make in a certain time period, preventing abuse and attacks.
+
+### Real-World Analogy
+```
+Rate Limiting = ATM Withdrawal Limits
+├── Daily Limit ($500/day)
+├── Transaction Limit (3 attempts)
+├── Cooling Period (24 hours)
+└── Security Alert (suspicious activity)
+```
+
+## 🚨 What We're Protecting Against
+
+### Common Attacks
+- **Brute Force**: Trying thousands of passwords
+- **DDoS**: Overwhelming our servers with requests
+- **Spam**: Sending too many emails or messages
+- **API Abuse**: Making excessive API calls
+
+### Real Attack Example
+```
+Normal User: 5 login attempts per minute ✅
+Attacker: 1000 login attempts per minute ❌
+```
+
+## 🛡️ How Rate Limiting Works
+
+### Basic Concept
+1. **Count requests** from each user/IP
+2. **Set time windows** (per minute, hour, day)
+3. **Define limits** (max 10 requests per minute)
+4. **Block excess** requests temporarily
+5. **Reset counters** after time window
+
+### Implementation Example
+```ts
+// Login rate limiting
+const rateLimiter = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  blockDuration: 30 * 60 * 1000 // 30 minutes
+};
+```
+
+## 🔐 In This Codebase
+
+### Protected Endpoints
+- **Login attempts**: 5 tries per 15 minutes
+- **Password reset**: 3 requests per hour
+- **Email verification**: 2 sends per 10 minutes
+- **2FA attempts**: 10 tries per 5 minutes
+
+### Smart Rate Limiting
+- **IP-based**: Track by IP address
+- **User-based**: Track by user account
+- **Progressive delays**: Longer delays after each attempt
+- **Whitelist**: Trusted IPs bypass limits
+
+## 📊 Rate Limiting Strategies
+
+### Different Approaches
+- **Fixed Window**: Reset every hour exactly
+- **Sliding Window**: Rolling time period
+- **Token Bucket**: Earn tokens over time
+- **Leaky Bucket**: Steady processing rate
+
+### Our Approach
+```ts
+// We use sliding window for fairness
+if (requests > limit) {
+  return error("Too many requests, try again later");
+}
+```
+
+## ✅ Benefits for Everyone
+
+### For Users
+- **Fair access**: Everyone gets equal opportunity
+- **Better performance**: Servers stay responsive
+- **Account protection**: Harder to brute force passwords
+
+### For Our App
+- **Cost control**: Prevents expensive server overload
+- **Stability**: Maintains consistent performance
+- **Security**: Blocks malicious automated attacks 

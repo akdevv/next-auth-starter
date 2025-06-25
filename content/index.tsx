@@ -1,9 +1,7 @@
 import { FaDatabase } from "react-icons/fa6";
-import { FaUnlock, FaTools } from "react-icons/fa";
+import { FaUnlock, FaTools, FaPlus } from "react-icons/fa";
 import { IoExtensionPuzzle } from "react-icons/io5";
-import { MdMarkEmailUnread } from "react-icons/md";
 import { FaShieldAlt } from "react-icons/fa";
-import { FaServer } from "react-icons/fa";
 
 export const docLinks: {
 	label: string;
@@ -78,107 +76,37 @@ export const docLinks: {
 		],
 	},
 	{
-		label: "Database & Backend",
-		href: "/docs/db-and-backend",
+		label: "Database",
+		href: "/docs/database",
 		icon: <FaDatabase className="mr-2 h-4 w-4 hover:text-foreground" />,
 		subsections: [
 			{
-				label: "Database Schema Overview",
-				href: "/docs/db-and-backend/schema-overview",
+				label: "DB Schema Overview",
+				href: "/docs/database/schema-overview",
 			},
 			{
 				label: "Prisma Configuration",
-				href: "/docs/db-and-backend/prisma-config",
+				href: "/docs/database/prisma-config",
 			},
 			{
 				label: "Database Migrations",
-				href: "/docs/db-and-backend/migrations",
+				href: "/docs/database/migrations",
 			},
 			{
 				label: "User Model Structure",
-				href: "/docs/db-and-backend/user-model",
+				href: "/docs/database/user-model",
 			},
 			{
 				label: "Session Management",
-				href: "/docs/db-and-backend/session-management",
+				href: "/docs/database/session-management",
 			},
 			{
 				label: "Backup Codes System",
-				href: "/docs/db-and-backend/backup-codes",
+				href: "/docs/database/backup-codes",
 			},
 			{
-				label: "Two-Factor Authentication Storage",
-				href: "/docs/db-and-backend/2fa-storage",
-			},
-		],
-	},
-	{
-		label: "Auth Logic & Middleware",
-		href: "/docs/auth-logic-middleware",
-		icon: (
-			<IoExtensionPuzzle className="mr-2 h-4 w-4 hover:text-foreground" />
-		),
-		subsections: [
-			{
-				label: "Route Protection",
-				href: "/docs/auth-logic-middleware/route-protection",
-			},
-			{
-				label: "Authentication Flow",
-				href: "/docs/auth-logic-middleware/auth-flow",
-			},
-			{
-				label: "Session Validation",
-				href: "/docs/auth-logic-middleware/session-validation",
-			},
-			{
-				label: "Token Management",
-				href: "/docs/auth-logic-middleware/token-management",
-			},
-			{
-				label: "Error Handling",
-				href: "/docs/auth-logic-middleware/error-handling",
-			},
-			{
-				label: "Security Headers",
-				href: "/docs/auth-logic-middleware/security-headers",
-			},
-			{
-				label: "Rate Limiting",
-				href: "/docs/auth-logic-middleware/rate-limiting",
-			},
-		],
-	},
-	{
-		label: "Email Features",
-		href: "/docs/email-features",
-		icon: (
-			<MdMarkEmailUnread className="mr-2 h-4 w-4 hover:text-foreground" />
-		),
-		subsections: [
-			{
-				label: "Email Verification System",
-				href: "/docs/email-features/verification-system",
-			},
-			{
-				label: "Password Reset Emails",
-				href: "/docs/email-features/password-reset-emails",
-			},
-			{
-				label: "Two-Factor Authentication Emails",
-				href: "/docs/email-features/2fa-emails",
-			},
-			{
-				label: "Email Templates",
-				href: "/docs/email-features/email-templates",
-			},
-			{
-				label: "Email Service Configuration",
-				href: "/docs/email-features/service-config",
-			},
-			{
-				label: "Email Rate Limiting",
-				href: "/docs/email-features/rate-limiting",
+				label: "2FA Storage",
+				href: "/docs/database/2fa-storage",
 			},
 		],
 	},
@@ -188,7 +116,7 @@ export const docLinks: {
 		icon: <FaShieldAlt className="mr-2 h-4 w-4 hover:text-foreground" />,
 		subsections: [
 			{
-				label: "Two-Factor Authentication",
+				label: "2FA",
 				href: "/docs/security-features/2fa",
 			},
 			{
@@ -203,44 +131,36 @@ export const docLinks: {
 				label: "Backup Codes",
 				href: "/docs/security-features/backup-codes",
 			},
-			{
-				label: "Rate Limiting",
-				href: "/docs/security-features/rate-limiting",
-			},
-			{
-				label: "Security Headers",
-				href: "/docs/security-features/security-headers",
-			},
-			{
-				label: "CSRF Protection",
-				href: "/docs/security-features/csrf-protection",
-			},
 		],
 	},
 	{
-		label: "API Documentation",
-		href: "/docs/api",
-		icon: <FaServer className="mr-2 h-4 w-4 hover:text-foreground" />,
+		label: "Additional",
+		href: "/docs/additional",
+		icon: <FaPlus className="mr-2 h-4 w-4 hover:text-foreground" />,
 		subsections: [
 			{
-				label: "Authentication Endpoints",
-				href: "/docs/api/auth-endpoints",
+				label: "JWT Tokens",
+				href: "/docs/additional/jwt-tokens",
 			},
 			{
-				label: "User Management Endpoints",
-				href: "/docs/api/user-endpoints",
+				label: "CSRF Protection",
+				href: "/docs/additional/csrf-protection",
 			},
 			{
-				label: "Two-Factor Authentication Endpoints",
-				href: "/docs/api/2fa-endpoints",
+				label: "Rate Limiting",
+				href: "/docs/additional/rate-limiting",
 			},
 			{
-				label: "Email Verification Endpoints",
-				href: "/docs/api/email-verification-endpoints",
+				label: "Session Management",
+				href: "/docs/additional/session-management",
 			},
 			{
-				label: "Session Management Endpoints",
-				href: "/docs/api/session-endpoints",
+				label: "Middleware",
+				href: "/docs/additional/middleware",
+			},
+			{
+				label: "API Polling",
+				href: "/docs/additional/api-polling",
 			},
 		],
 	},

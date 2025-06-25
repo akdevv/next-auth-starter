@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { generateTwoFactorSetup } from "@/server/actions/2fa";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
 	try {
 		const session = await auth();
 

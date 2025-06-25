@@ -66,10 +66,6 @@ export async function DELETE(
 			},
 		});
 
-		console.log(
-			`Session ${params.sessionId} marked as revoked by user ${session.user.id}`
-		);
-
 
 		// Invalidate cache
 		revalidateTag("sessions");

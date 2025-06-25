@@ -1,0 +1,68 @@
+---
+title: Backup Codes
+description: Emergency recovery codes for account access when 2FA devices are unavailable
+tags: [backup-codes, recovery, security, 2fa]
+---
+
+# 🔑 Backup Codes
+
+Backup codes provide a secure emergency access method when users lose access to their primary two-factor authentication device.
+
+## 🛡️ Security Implementation
+
+### Code Generation
+```ts
+// Generate 10 secure backup codes
+const backupCodes = generateBackupCodes(10);
+// Returns: ['A1B2C3D4', 'E5F6G7H8', ...]
+```
+
+### Secure Storage
+- **SHA-256 hashing**: Codes are hashed before database storage
+- **One-time use**: Each code becomes invalid after verification
+- **Cryptographic security**: Generated using secure random bytes
+
+## 🔧 Code Features
+
+### Generation Process
+- **8-character codes**: Alphanumeric hex codes in uppercase
+- **Collision-resistant**: Cryptographically secure random generation
+- **User-friendly format**: Easy to read and type manually
+
+### Verification System
+```ts
+// Verify and remove used backup code
+const isValid = verifyBackupCode(inputCode, hashedCodes);
+const hashedInput = createHash("sha256").update(inputCode).digest("hex");
+```
+
+## 🔐 Security Benefits
+
+### Hash Protection
+- **No plaintext storage**: Original codes never stored in database
+- **SHA-256 security**: Industry-standard cryptographic hashing
+- **Salt resistance**: Each code independently secured
+
+### Usage Controls
+- **Single use only**: Codes automatically invalidated after use
+- **Limited quantity**: Finite number prevents abuse
+- **Audit trail**: Code usage tracked for security monitoring
+
+## 📱 User Experience
+
+### Display & Storage
+- **One-time display**: Codes shown only during generation
+- **Download option**: Secure export for offline storage
+- **Print-friendly**: Formatted for physical backup storage
+
+### Recovery Process
+- **Emergency access**: Bypass 2FA when device unavailable
+- **Account restoration**: Regain access to locked accounts
+- **Code regeneration**: Create new codes after usage
+
+## ✅ Best Practices
+
+- **Secure storage**: Store codes in password managers or safe locations
+- **Regular rotation**: Regenerate codes periodically
+- **Usage monitoring**: Track code consumption for security awareness
+- **Multiple backups**: Store copies in different secure locations

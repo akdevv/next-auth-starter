@@ -1,0 +1,43 @@
+---
+title: Database Schema Overview
+description: Complete overview of the database schema design and relationships
+tags: [database, schema, prisma, postgresql]
+---
+
+# 📊 Database Schema Overview
+
+The authentication system uses a PostgreSQL database with Prisma ORM, designed for scalability and security. The schema consists of 6 core models that handle all authentication and user management features.
+
+## 🏗️ Core Models
+
+### 👤 User Model
+Central entity storing user information, authentication settings, and security preferences.
+
+### 🔐 Session Model  
+Manages active user sessions with device tracking and security monitoring.
+
+### 🔗 Account Model
+Handles OAuth provider connections (Google, GitHub, etc.) for social authentication.
+
+### ✉️ Verification Models
+- **VerificationToken**: Email verification and password reset tokens
+- **VerificationAttempt**: Audit trail for verification attempts
+
+### 🛡️ Security Models
+- **TwoFactorToken**: Temporary tokens for 2FA verification
+
+## 🔄 Key Relationships
+
+```ts
+User → Sessions (1:many)
+User → Accounts (1:many) 
+User → VerificationAttempts (1:many)
+User → TwoFactorTokens (1:many)
+```
+
+## 🎯 Design Principles
+
+- **Security First**: All sensitive data is properly encrypted
+- **Audit Trail**: Complete tracking of authentication events
+- **Scalable**: Indexed for performance with growing user base
+- **Type Safe**: Full TypeScript integration with Prisma 

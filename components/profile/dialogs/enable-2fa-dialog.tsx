@@ -79,7 +79,6 @@ export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
 
 		setIsLoading(true);
 		try {
-			console.log("verifying and enabling");
 			const res = await fetch("/api/auth/2fa/verify-setup", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -88,10 +87,8 @@ export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
 					secret: setupData.secret,
 				}),
 			});
-			console.log("res", res);
 
 			const data = await res.json();
-			console.log("data", data);
 			if (data.error) {
 				toast.error(data.error);
 				throw new Error(data.error);

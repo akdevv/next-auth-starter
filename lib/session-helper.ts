@@ -120,8 +120,6 @@ export const formatLastActive = (date: Date) => {
 };
 
 export const clearSessionCookie = () => {
-	console.log("clearing session cookie");
-
 	const hostname = window.location.hostname;
 	const cookieOptions = [
 		`authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`,
