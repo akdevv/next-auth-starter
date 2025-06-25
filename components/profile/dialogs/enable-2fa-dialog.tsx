@@ -24,6 +24,7 @@ import { FaDownload, FaKey } from "react-icons/fa";
 import { LuEyeClosed, LuEye } from "react-icons/lu";
 import { Label } from "@/components/ui/label";
 import { LuLoaderCircle } from "react-icons/lu";
+import Image from "next/image";
 
 interface TwoFactorSetupData {
 	secret: string;
@@ -67,6 +68,7 @@ export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
 			const data = await res.json();
 			setSetupData(data);
 		} catch (error) {
+			console.error("Error in initializeSetup:", error);
 			toast.error("Failed to initialize setup!");
 			throw new Error("Failed to initialize setup!");
 		} finally {
@@ -170,12 +172,14 @@ export function Enable2FADialog({ open, onOpenChange }: Enable2FADialogProps) {
 											Step 1: Scan QR Code
 										</h3>
 										<div className="bg-white p-2 overflow-hidden rounded-2xl inline-block shadow-sm border border-border/50">
-											<img
+											<Image
 												src={
 													setupData?.qrCodeUrl ||
 													"https://placehold.co/400"
 												}
 												alt="2FA QR Code"
+												width={192}
+												height={192}
 												className="w-48 h-48"
 											/>
 										</div>

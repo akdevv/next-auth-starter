@@ -41,7 +41,7 @@ export function DocsSidebar({ isOpen, className }: DocsSidebarProps) {
 				setOpenSections((prev) => [...prev, parentPath]);
 			}
 		}
-	}, [pathname]);
+	}, [pathname, openSections]);
 
 	return (
 		<>

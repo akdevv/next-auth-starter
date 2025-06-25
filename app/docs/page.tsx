@@ -70,7 +70,7 @@ export default function Docs() {
 										Auth Components
 									</CardTitle>
 									<CardDescription className="text-muted-foreground leading-relaxed">
-										Next Auth Starter's prebuilt
+										Next Auth Starter&apos;s prebuilt
 										authentication components give you a
 										beautiful, fully-functional user
 										management experience in minutes.
@@ -168,7 +168,7 @@ export default function Docs() {
 												users to authenticate and
 												interact directly with your
 												database with Next Auth
-												Starter's integrations.
+												Starter&apos;s integrations.
 											</p>
 										</div>
 									</div>
@@ -236,7 +236,7 @@ export default function Docs() {
 												Email features
 											</h3>
 											<p className="text-muted-foreground leading-relaxed">
-												Next Auth Starter's email
+												Next Auth Starter&apos;s email
 												features can be customized to
 												match the look and feel of your
 												application.
@@ -255,8 +255,8 @@ export default function Docs() {
 												APIs
 											</h3>
 											<p className="text-muted-foreground leading-relaxed">
-												Next Auth Starter's APIs allow
-												you to call the Next Auth
+												Next Auth Starter&apos;s APIs
+												allow you to call the Next Auth
 												Starter server API without
 												having to implement the calls
 												yourself.

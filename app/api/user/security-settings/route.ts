@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { getUserById } from "@/server/db/user";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
 	const session = await auth();
 
 	if (!session || !session?.user?.id) {

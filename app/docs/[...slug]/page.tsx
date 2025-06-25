@@ -20,6 +20,7 @@ async function getDocBySlug(slug: string[]) {
 		const { data, content } = matter(fileContents);
 		return { metadata: data, content };
 	} catch (err) {
+		console.error("Error getting doc by slug:", err);
 		return null;
 	}
 }

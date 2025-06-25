@@ -28,9 +28,6 @@ export default function VerifyEmailPage({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
 	const [countdown, setCountdown] = useState(60); // 1 minute
-	const [attempts, setAttempts] = useState(0);
-	const [maxAttempts, setMaxAttempts] = useState(10);
-	// const [isExpired, setIsExpired] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { data: session, status } = useSession();
 	const [callbackUrl, setCallbackUrl] = useState<string>("/profile");
@@ -61,7 +58,7 @@ export default function VerifyEmailPage({
 		}, 1000);
 
 		return () => clearInterval(timer);
-	}, []);
+	}, [timeLeft]);
 
 	const handleVerify = async () => {
 		if (!code || code.length !== 6) {
@@ -78,10 +75,6 @@ export default function VerifyEmailPage({
 
 			const data = await res.json();
 			if (!res.ok) {
-				if (data.attempts) {
-					setAttempts(data.attempts);
-					setMaxAttempts(data.maxAttempts);
-				}
 				if (data.attemptsExceeded) {
 					setError("Maximum attempts reached. Request a new code.");
 					toast.error(

@@ -31,6 +31,13 @@ const options = {
 	},
 };
 
+interface MDXOptions {
+	mdxOptions: {
+		remarkPlugins: [];
+		rehypePlugins: [];
+	};
+}
+
 type CodeBlockType = {
 	headerIcon: React.ReactNode | null;
 	headerLabel: React.ReactNode | null;
@@ -124,131 +131,142 @@ const getCodeBlockType = (match: RegExpExecArray | null): CodeBlockType => {
 	return result;
 };
 
+function CodeComponent(props: React.HTMLAttributes<HTMLElement>) {
+	const { children, className, ...rest } = props;
+	const match = /language-(\w+)/.exec(className || "");
+	const [copied, setCopied] = useState(false);
+
+	const copyToClipboard = async () => {
+		await navigator.clipboard.writeText(children as string);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	const { headerIcon, headerLabel, isTerminal } = getCodeBlockType(match);
+
+	if (headerIcon && headerLabel) {
+		return (
+			<div className="my-6 rounded-lg border border-border bg-card">
+				<div className="flex items-center px-4 py-2 border-b border-border bg-muted rounded-t-lg">
+					{headerIcon}
+					{headerLabel}
+				</div>
+				<div className="relative group px-4 py-3">
+					<pre className="overflow-x-auto bg-transparent p-0 m-0 border-0 shadow-none">
+						<code
+							className="text-[15px] font-mono text-foreground"
+							{...rest}
+						>
+							{isTerminal && typeof children === "string"
+								? children.replace(
+										/\b(npx|npm|yarn)\b/g,
+										(m) =>
+											`<span style='color:var(--primary)'>${m}</span>`
+									)
+								: children}
+						</code>
+					</pre>
+					<div className="absolute top-2 right-2 rounded-md bg-background">
+						<button
+							onClick={copyToClipboard}
+							className="p-2 rounded-md bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer"
+							aria-label="Copy code"
+						>
+							{copied ? (
+								<FaCheck className="h-4 w-4 text-chart-3" />
+							) : (
+								<LuCopy className="h-4 w-4 text-muted-foreground" />
+							)}
+						</button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	return match ? (
+		<div className="relative group">
+			<pre className="overflow-x-auto rounded-lg my-4" {...rest}>
+				<code className={className} {...rest}>
+					{children}
+				</code>
+			</pre>
+			<div className="absolute top-2 right-2 rounded-md bg-background">
+				<button
+					onClick={copyToClipboard}
+					className="p-2 rounded-md bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer"
+					aria-label="Copy code"
+				>
+					{copied ? (
+						<FaCheck className="h-4 w-4 text-chart-3" />
+					) : (
+						<LuCopy className="h-4 w-4 text-muted-foreground" />
+					)}
+				</button>
+			</div>
+		</div>
+	) : (
+		<code {...rest}>{children}</code>
+	);
+}
+
 const components = {
-	h1: (props: any) => (
+	h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
 		<h1 className="text-2xl md:text-3xl font-bold mt-8 mb-4" {...props} />
 	),
-	h2: (props: any) => (
+	h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
 		<h2 className="text-xl md:text-2xl font-bold mt-8 mb-4" {...props} />
 	),
-	h3: (props: any) => (
+	h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
 		<h3 className="text-lg md:text-xl font-bold mt-6 mb-3" {...props} />
 	),
-	h4: (props: any) => (
+	h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
 		<h4 className="text-base md:text-lg font-bold mt-4 mb-2" {...props} />
 	),
-	p: (props: any) => <p className="my-4 text-base leading-7" {...props} />,
-	ul: (props: any) => (
+	p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+		<p className="my-4 text-base leading-7" {...props} />
+	),
+	ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
 		<ul className="list-disc pl-6 my-4 space-y-2" {...props} />
 	),
-	ol: (props: any) => (
+	ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
 		<ol className="list-decimal pl-6 my-4 space-y-2" {...props} />
 	),
-	li: (props: any) => <li className="text-base leading-7" {...props} />,
-	a: (props: any) => (
+	li: (props: React.HTMLAttributes<HTMLLIElement>) => (
+		<li className="text-base leading-7" {...props} />
+	),
+	a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
 		<a className="text-primary hover:underline" {...props} />
 	),
-	blockquote: (props: any) => (
+	blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
 		<blockquote
 			className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground"
 			{...props}
 		/>
 	),
-	code: (props: any) => {
-		const { children, className, ...rest } = props;
-		const match = /language-(\w+)/.exec(className || "");
-		const [copied, setCopied] = useState(false);
-
-		const copyToClipboard = async () => {
-			await navigator.clipboard.writeText(children as string);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		};
-
-		const { headerIcon, headerLabel, isTerminal } = getCodeBlockType(match);
-
-		if (headerIcon && headerLabel) {
-			return (
-				<div className="my-6 rounded-lg border border-border bg-card">
-					<div className="flex items-center px-4 py-2 border-b border-border bg-muted rounded-t-lg">
-						{headerIcon}
-						{headerLabel}
-					</div>
-					<div className="relative group px-4 py-3">
-						<pre className="overflow-x-auto bg-transparent p-0 m-0 border-0 shadow-none">
-							<code
-								className="text-[15px] font-mono text-foreground"
-								{...rest}
-							>
-								{isTerminal && typeof children === "string"
-									? children.replace(
-											/\b(npx|npm|yarn)\b/g,
-											(m) =>
-												`<span style='color:var(--primary)'>${m}</span>`
-										)
-									: children}
-							</code>
-						</pre>
-						<div className="absolute top-2 right-2 rounded-md bg-background">
-							<button
-								onClick={copyToClipboard}
-								className="p-2 rounded-md bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer"
-								aria-label="Copy code"
-							>
-								{copied ? (
-									<FaCheck className="h-4 w-4 text-chart-3" />
-								) : (
-									<LuCopy className="h-4 w-4 text-muted-foreground" />
-								)}
-							</button>
-						</div>
-					</div>
-				</div>
-			);
-		}
-
-		return match ? (
-			<div className="relative group">
-				<pre className="overflow-x-auto rounded-lg my-4" {...rest}>
-					<code className={className} {...rest}>
-						{children}
-					</code>
-				</pre>
-				<div className="absolute top-2 right-2 rounded-md bg-background">
-					<button
-						onClick={copyToClipboard}
-						className="p-2 rounded-md bg-accent/10 hover:bg-accent/20 transition-colors cursor-pointer"
-						aria-label="Copy code"
-					>
-						{copied ? (
-							<FaCheck className="h-4 w-4 text-chart-3" />
-						) : (
-							<LuCopy className="h-4 w-4 text-muted-foreground" />
-						)}
-					</button>
-				</div>
-			</div>
-		) : (
-			<code {...rest}>{children}</code>
-		);
-	},
-	pre: (props: any) => <pre {...props} />,
-	table: (props: any) => (
+	code: CodeComponent,
+	pre: (props: React.HTMLAttributes<HTMLPreElement>) => <pre {...props} />,
+	table: (props: React.HTMLAttributes<HTMLTableElement>) => (
 		<div className="overflow-x-auto my-6 rounded-lg border border-border">
 			<table className="min-w-full divide-y divide-border" {...props} />
 		</div>
 	),
-	th: (props: any) => (
+	th: (props: React.HTMLAttributes<HTMLTableHeaderCellElement>) => (
 		<th className="px-4 py-2 bg-muted font-medium text-left" {...props} />
 	),
-	td: (props: any) => (
+	td: (props: React.HTMLAttributes<HTMLTableDataCellElement>) => (
 		<td className="px-4 py-2 border-t text-sm" {...props} />
 	),
-	hr: (props: any) => <hr className="my-6 border-border" {...props} />,
+	hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
+		<hr className="my-6 border-border" {...props} />
+	),
 };
 
 interface MDXContentProps {
-	doc: { metadata: any; content: string };
+	doc: {
+		metadata: { title: string; description: string; tags: string[] };
+		content: string;
+	};
 }
 
 export default function MDXContent({ doc }: MDXContentProps) {
@@ -279,7 +297,7 @@ export default function MDXContent({ doc }: MDXContentProps) {
 				<MDXRemote
 					source={doc.content}
 					components={components}
-					options={options as any}
+					options={options as MDXOptions}
 				/>
 			</div>
 		</article>

@@ -63,11 +63,13 @@ export default function DevicesSection() {
 			if (!response.ok) throw new Error("Failed to fetch sessions");
 
 			const data = await response.json();
-			const processedSessions = data.sessions.map((session: any) => ({
-				...session,
-				lastActive: new Date(session.lastActive),
-				createdAt: new Date(session.createdAt),
-			}));
+			const processedSessions = data.sessions.map(
+				(session: SessionInfo) => ({
+					...session,
+					lastActive: new Date(session.lastActive),
+					createdAt: new Date(session.createdAt),
+				})
+			);
 
 			if (processedSessions.length > 0) {
 				processedSessions[0].isCurrent = true;
