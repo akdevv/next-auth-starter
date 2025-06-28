@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { MdErrorOutline } from "react-icons/md";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 
 const errorMessages: Record<string, string> = {
@@ -25,7 +25,7 @@ const errorMessages: Record<string, string> = {
 	default: "An error occurred during authentication.",
 };
 
-function ErrorContent() {
+export default function AuthError() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const error = searchParams.get("error");
@@ -123,13 +123,5 @@ function ErrorContent() {
 				)}
 			</div>
 		</div>
-	);
-}
-
-export default function AuthError() {
-	return (
-		<Suspense fallback={<div>Loading...</div>}>
-			<ErrorContent />
-		</Suspense>
 	);
 }

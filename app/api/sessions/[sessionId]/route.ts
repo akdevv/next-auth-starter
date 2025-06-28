@@ -5,9 +5,10 @@ import { revalidateTag } from "next/cache";
 
 export async function DELETE(
 	request: NextRequest,
-	{ params }: { params: { sessionId: string } }
+	{ params }: { params: Promise<{ sessionId: string }> }
 ) {
 	try {
+		const { sessionId } = await params;
 		const session = await auth();
 		if (!session?.user?.id) {
 			return NextResponse.json(
@@ -21,7 +22,7 @@ export async function DELETE(
 		// Verify the session belongs to the current user
 		const sessionToRevoke = await db.session.findFirst({
 			where: {
-				id: params.sessionId,
+				id: sessionId,
 				userId: session.user.id,
 			},
 		});
@@ -42,7 +43,7 @@ export async function DELETE(
 		});
 
 		// Don't allow revoking current session
-		const isCurrentSession = currentSession?.id === params.sessionId;
+		const isCurrentSession = currentSession?.id === sessionId;
 
 		if (isCurrentSession) {
 			return NextResponse.json(
@@ -56,7 +57,7 @@ export async function DELETE(
 		// STEP 1: Mark session as revoked
 		await db.session.update({
 			where: {
-				id: params.sessionId,
+				id: sessionId,
 			},
 			data: {
 				isRevoked: true,
@@ -65,7 +66,6 @@ export async function DELETE(
 				expires: expireNow ? new Date() : undefined,
 			},
 		});
-
 
 		// Invalidate cache
 		revalidateTag("sessions");

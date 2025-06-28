@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,9 @@ import { LuEyeClosed, LuEye } from "react-icons/lu";
 export default function ResetPasswordPage({
 	params,
 }: {
-	params: { secureUrl: string };
+	params: Promise<{ secureUrl: string }>;
 }) {
+	const { secureUrl } = use(params);
 	const [isValid, setIsValid] = useState(false);
 	const [isPending, setIsPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export default function ResetPasswordPage({
 			try {
 				const res = await fetch("/api/auth/forgot-password/verify", {
 					method: "POST",
-					body: JSON.stringify({ token: params.secureUrl }),
+					body: JSON.stringify({ token: secureUrl }),
 				});
 				const result = await res.json();
 				if (result.valid) {
@@ -51,7 +52,7 @@ export default function ResetPasswordPage({
 		};
 
 		verifyToken();
-	}, [params.secureUrl]);
+	}, [secureUrl]);
 
 	const onSubmit = async (data: {
 		password: string;
@@ -69,7 +70,7 @@ export default function ResetPasswordPage({
 			const res = await fetch("/api/auth/forgot-password/confirm", {
 				method: "POST",
 				body: JSON.stringify({
-					token: params.secureUrl,
+					token: secureUrl,
 					password: data.password,
 				}),
 			});

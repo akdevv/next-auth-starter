@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import MDXContent from "@/components/docs/mdx-content";
 
 interface DocsPageProps {
-	params: { slug: string[] };
+	params: Promise<{ slug: string[] }>;
 }
 
 async function getDocBySlug(slug: string[]) {

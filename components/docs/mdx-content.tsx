@@ -264,7 +264,11 @@ const components = {
 
 interface MDXContentProps {
 	doc: {
-		metadata: { title: string; description: string; tags: string[] };
+		metadata: {
+			title?: string;
+			description?: string;
+			tags?: string[];
+		};
 		content: string;
 	};
 }
@@ -273,15 +277,17 @@ export default function MDXContent({ doc }: MDXContentProps) {
 	return (
 		<article className="max-w-5xl mx-auto px-2">
 			<div className="prose dark:prose-invert max-w-none">
-				<h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2 mt-15">
-					{doc.metadata.title}
-				</h1>
+				{doc.metadata.title && (
+					<h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2 mt-15">
+						{doc.metadata.title}
+					</h1>
+				)}
 				{doc.metadata.description && (
 					<p className="text-lg md:text-xl text-muted-foreground mb-2">
 						{doc.metadata.description}
 					</p>
 				)}
-				{doc.metadata.tags && (
+				{doc.metadata.tags && doc.metadata.tags.length > 0 && (
 					<div className="flex flex-wrap gap-2 mb-8">
 						{doc.metadata.tags.map((tag: string) => (
 							<span
