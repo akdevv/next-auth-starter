@@ -7,6 +7,9 @@ import { SessionValidator } from "@/components/session-validator";
 export const metadata: Metadata = {
 	title: "next-auth-starter",
 	description: "Simple starter for next-auth using Next.js 14",
+	icons: {
+		icon: "/favicon.ico",
+	},
 };
 
 export default function RootLayout({

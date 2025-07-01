@@ -30,13 +30,14 @@ export default function TermsPage() {
 							<div className="space-y-4">
 								<p className="text-muted-foreground leading-relaxed">
 									By accessing and using our authentication
-									platform (the <strong>"Service"</strong>),
-									you acknowledge and consent to our
-									comprehensive data collection practices as
-									outlined herein. We collect, process, and
-									store various categories of personal and
-									technical information to provide, maintain,
-									and improve our services, ensure security
+									platform (the{" "}
+									<strong>&quot;Service&quot;</strong>), you
+									acknowledge and consent to our comprehensive
+									data collection practices as outlined
+									herein. We collect, process, and store
+									various categories of personal and technical
+									information to provide, maintain, and
+									improve our services, ensure security
 									compliance, and fulfill our legal
 									obligations under applicable data protection
 									regulations including but not limited to the{" "}
@@ -130,8 +131,8 @@ export default function TermsPage() {
 									We maintain detailed logs of your
 									interactions with our Service to ensure
 									security, provide customer support, and
-									improve our platform's functionality. This
-									encompasses{" "}
+									improve our platform&apos;s functionality.
+									This encompasses{" "}
 									<strong>session management data</strong>{" "}
 									including login timestamps, logout events,
 									session duration, concurrent session
@@ -310,10 +311,11 @@ export default function TermsPage() {
 								<strong>Active account data</strong> including
 								profile information, authentication credentials,
 								and preference settings are retained for the
-								duration of your account's active status and for
-								a period of <strong>thirty (30) days</strong>{" "}
-								following account deactivation to allow for
-								account recovery.{" "}
+								duration of your account&apos;s active status
+								and for a period of{" "}
+								<strong>thirty (30) days</strong> following
+								account deactivation to allow for account
+								recovery.{" "}
 								<strong>Session and authentication logs</strong>{" "}
 								are retained for{" "}
 								<strong>ninety (90) days</strong> to facilitate
@@ -413,11 +415,11 @@ export default function TermsPage() {
 								you to request correction of inaccurate personal
 								data and completion of incomplete data. You may
 								exercise your <strong>right to erasure</strong>{" "}
-								(also known as the "right to be forgotten")
-								under specific circumstances, including when the
-								data is no longer necessary for the original
-								purposes or when you withdraw consent for
-								processing based on consent.
+								(also known as the &quot;right to be
+								forgotten&quot;) under specific circumstances,
+								including when the data is no longer necessary
+								for the original purposes or when you withdraw
+								consent for processing based on consent.
 							</p>
 							<p className="text-muted-foreground leading-relaxed">
 								Additionally, you have the{" "}
