@@ -19,6 +19,7 @@ export default async function middleware(req: NextRequest) {
 	const publicRoutes = [
 		"/",
 		"/docs",
+		"/terms",
 		"/auth/login",
 		"/auth/register",
 		"/auth/error",
